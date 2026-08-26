@@ -24,6 +24,17 @@ docker compose up --build
 
 On startup the API seeds the source registry with BHEL's known Tier-1 URLs — `GET /api/sources` should show them immediately.
 
+## Working with documents and search
+
+```
+POST /api/sources/{id}/crawl        # fetch a registered source's URL
+POST /api/documents/upload          # upload a PDF directly (multipart "file")
+POST /api/documents/{id}/process    # chunk + embed a document's extracted text
+GET  /api/search?q=...&alpha=0.5    # hybrid (vector + text) search with citations
+```
+
+Set `VOYAGE_API_KEY` in `.env` for real embeddings (Voyage AI). Without it, the API falls back to a deterministic but **not semantically meaningful** local embedder — the pipeline runs end-to-end, but search *ranking quality* requires a real key. See `app/core/embeddings.py`.
+
 ## Project structure
 
 ```
