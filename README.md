@@ -67,6 +67,16 @@ POST /api/entities
 
 On startup the API also seeds BHEL, four competitors (L&T Power, Siemens Energy, GE Vernova, Thermax — each linked to their real official site, verified live), and four technology concepts (Digital Twin, Agentic AI, GraphRAG, IIoT), plus `competes_with`/`relevant_to` relationships between them. Browse at http://localhost:3000/competitors and http://localhost:3000/technologies.
 
+## Deep Research
+
+```
+POST /api/research   {"topic": "..."}
+GET  /api/research
+GET  /api/research/{id}
+```
+
+Generalizes `/api/ask` into a topic-level report: the agent searches indexed documents, tenders, *and* KG entities together, citing each claim as `[chunk:<id>]`, `[tender:<id>]`, or `[entity:<id>]` — verified the same way as `/api/ask` (only counted if actually retrieved via a tool call this turn). Reports persist and are listed on http://localhost:3000/research. Same `ANTHROPIC_API_KEY` requirement as `/api/ask`.
+
 ## Project structure
 
 ```

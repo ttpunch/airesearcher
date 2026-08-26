@@ -97,3 +97,39 @@ export type Entity = {
 export function fetchEntities(entityType: string): Promise<Entity[]> {
   return getJson<Entity[]>(`/api/entities?entity_type=${encodeURIComponent(entityType)}`);
 }
+
+export type Reference = {
+  ref_type: string;
+  ref_id: number;
+  label: string;
+  detail: string | null;
+  url: string | null;
+  tier: string | null;
+};
+
+export type ResearchReport = {
+  id: number;
+  topic: string;
+  summary: string;
+  references: Reference[];
+  unverifiable_reference_count: number;
+  status: string;
+  created_at: string;
+};
+
+export function fetchResearchReports(): Promise<ResearchReport[]> {
+  return getJson<ResearchReport[]>("/api/research");
+}
+
+export async function createResearchReport(topic: string): Promise<ResearchReport> {
+  const res = await fetch(`${getApiUrl()}/api/research`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ topic }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `Research request failed: ${res.status}`);
+  }
+  return res.json();
+}

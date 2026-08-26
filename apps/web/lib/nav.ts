@@ -7,6 +7,7 @@ export type NavLink = {
 // editing the home page's markup directly.
 export const NAV_LINKS: NavLink[] = [
   { href: "/ask", label: "Ask AI" },
+  { href: "/research", label: "Deep Research" },
   { href: "/tenders", label: "Tenders" },
   { href: "/competitors", label: "Competitors" },
   { href: "/technologies", label: "Technologies" },
