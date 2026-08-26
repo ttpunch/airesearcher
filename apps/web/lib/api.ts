@@ -82,3 +82,18 @@ export function fetchTenders(): Promise<Tender[]> {
 export function fetchTenderAnalysis(): Promise<TenderAnalysis> {
   return getJson<TenderAnalysis>("/api/tenders/analyze");
 }
+
+export type Entity = {
+  id: number;
+  name: string;
+  entity_type: string;
+  description: string | null;
+  source_id: number | null;
+  source_name: string | null;
+  source_url: string | null;
+  created_at: string;
+};
+
+export function fetchEntities(entityType: string): Promise<Entity[]> {
+  return getJson<Entity[]>(`/api/entities?entity_type=${encodeURIComponent(entityType)}`);
+}

@@ -57,6 +57,16 @@ GET  /api/tenders/analyze                           # counts by status and organ
 
 Extraction is regex-based, not an LLM call — a field only appears if it was actually found in the document text (closing date, EMD amount, tender ref, eligibility-clause sentences). Browse it at http://localhost:3000/tenders.
 
+## Knowledge graph: competitors and technologies
+
+```
+GET  /api/entities?entity_type=competitor   # or technology, organization
+GET  /api/entities/{id}                     # includes its relationships
+POST /api/entities
+```
+
+On startup the API also seeds BHEL, four competitors (L&T Power, Siemens Energy, GE Vernova, Thermax — each linked to their real official site, verified live), and four technology concepts (Digital Twin, Agentic AI, GraphRAG, IIoT), plus `competes_with`/`relevant_to` relationships between them. Browse at http://localhost:3000/competitors and http://localhost:3000/technologies.
+
 ## Project structure
 
 ```
