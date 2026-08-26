@@ -35,6 +35,13 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# app.core.db's engine/pool is a module-level singleton (correct for the
+# running app, which has exactly one event loop). Function-scoped test
+# loops (pytest-asyncio's default) would hand that pool a connection tied
+# to one test's loop, then try to use/close it from a different loop in
+# the next test. Session-scoped loop avoids that entirely.
+asyncio_default_test_loop_scope = "session"
+asyncio_default_fixture_loop_scope = "session"
 
 [tool.ruff.lint]
 # B008: FastAPI's `Depends(...)` in argument defaults is the documented,
