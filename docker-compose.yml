@@ -35,6 +35,23 @@ services:
       - ./apps/api:/app
       - api_venv:/app/.venv
 
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./apps/web:/app
+      - web_node_modules:/app/node_modules
+      - web_next:/app/.next
+
 volumes:
   postgres_data:
   api_venv:
+  web_node_modules:
+  web_next:
