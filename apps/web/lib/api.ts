@@ -44,3 +44,41 @@ export async function askQuestion(question: string): Promise<AskResponse> {
   }
   return res.json();
 }
+
+export type Tender = {
+  id: number;
+  source_id: number;
+  document_id: number | null;
+  title: string;
+  tender_ref: string | null;
+  organization: string;
+  url: string;
+  published_date: string | null;
+  closing_date: string | null;
+  estimated_value: string | null;
+  status: string;
+  extracted_requirements: string | null;
+  created_at: string;
+};
+
+export type TenderAnalysis = {
+  total_tenders: number;
+  by_status: Record<string, number>;
+  by_organization: { organization: string; total: number; by_status: Record<string, number> }[];
+};
+
+async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${getApiUrl()}${path}`);
+  if (!res.ok) {
+    throw new Error(`Request to ${path} failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function fetchTenders(): Promise<Tender[]> {
+  return getJson<Tender[]>("/api/tenders");
+}
+
+export function fetchTenderAnalysis(): Promise<TenderAnalysis> {
+  return getJson<TenderAnalysis>("/api/tenders/analyze");
+}

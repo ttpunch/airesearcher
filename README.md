@@ -45,6 +45,18 @@ Runs the agentic research loop (Claude Agent SDK): it searches indexed documents
 
 Requires `ANTHROPIC_API_KEY` (or another Claude Agent SDK-supported credential) in the API's environment — the endpoint calls the real SDK, unlike the automated tests, which stub it out (see `app/agent/research_agent.py`'s module docstring for why).
 
+## Tender intelligence
+
+```
+GET  /api/tenders?status=open&organization=BHEL   # list, optionally filtered
+GET  /api/tenders/{id}
+POST /api/tenders                                  # register a tender
+POST /api/tenders/{id}/extract                      # deterministic field extraction from its linked document
+GET  /api/tenders/analyze                           # counts by status and organization
+```
+
+Extraction is regex-based, not an LLM call — a field only appears if it was actually found in the document text (closing date, EMD amount, tender ref, eligibility-clause sentences). Browse it at http://localhost:3000/tenders.
+
 ## Project structure
 
 ```

@@ -35,6 +35,12 @@ BHEL_SEED_SOURCES: list[dict[str, str]] = [
         "source_type": "bhel_official",
         "tier": "T1",
     },
+    {
+        "name": "BHEL — Tenders",
+        "url": "https://www.bhel.com/tenders",
+        "source_type": "tender_portal",
+        "tier": "T1",
+    },
 ]
 
 
