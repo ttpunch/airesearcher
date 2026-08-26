@@ -17,9 +17,12 @@ docker compose up --build
 ```
 
 - Web: http://localhost:3000
-- API: http://localhost:8000
+- API: http://localhost:8000 ([docs](http://localhost:8000/docs))
 - API health check: http://localhost:8000/health
 - Full-stack status (API + DB connectivity): http://localhost:8000/api/status
+- MinIO console (object storage): http://localhost:9001 (login from `.env`'s `S3_ACCESS_KEY`/`S3_SECRET_KEY`)
+
+On startup the API seeds the source registry with BHEL's known Tier-1 URLs — `GET /api/sources` should show them immediately.
 
 ## Project structure
 
@@ -41,6 +44,7 @@ make down      # docker compose down
 make logs      # tail logs from all services
 make migrate   # run Alembic migrations manually
 make lint      # lint both apps
+make test      # run the API test suite
 ```
 
 ## Database migrations

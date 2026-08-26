@@ -5,12 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core import storage
 from app.core.config import settings
+from app.core.db import AsyncSessionLocal
+from app.core.seed import seed_sources
 from app.routers import documents, health, sources
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     storage.ensure_bucket()
+    async with AsyncSessionLocal() as db:
+        await seed_sources(db)
     yield
 
 

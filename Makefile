@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate lint
+.PHONY: up down logs migrate lint test
 
 up:
 	docker compose up --build
@@ -15,3 +15,6 @@ migrate:
 lint:
 	cd apps/web && pnpm lint
 	cd apps/api && uv run ruff check .
+
+test:
+	docker compose exec api uv run pytest

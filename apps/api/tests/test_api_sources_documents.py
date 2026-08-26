@@ -37,9 +37,12 @@ async def _cleanup_source(url: str) -> None:
 
 
 async def test_create_and_list_source(client):
+    # Distinct from app.core.seed's real BHEL URLs, which the app's lifespan
+    # now seeds on every startup (including this test, via LifespanManager)
+    # — using one of those here would collide on the url unique constraint.
     payload = {
-        "name": "BHEL Official Site",
-        "url": "https://www.bhel.com/",
+        "name": "BHEL Test Fixture Source",
+        "url": "https://www.bhel.com/test-fixture-source",
         "source_type": "bhel_official",
         "tier": "T1",
     }
