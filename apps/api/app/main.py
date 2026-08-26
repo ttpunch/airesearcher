@@ -1,10 +1,20 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core import storage
 from app.core.config import settings
-from app.routers import health
+from app.routers import documents, health, sources
 
-app = FastAPI(title="AI Researcher API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    storage.ensure_bucket()
+    yield
+
+
+app = FastAPI(title="AI Researcher API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,3 +24,5 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(sources.router)
+app.include_router(documents.router)

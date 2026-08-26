@@ -24,6 +24,7 @@ dev = [
     "httpx>=0.28",
     "pytest-asyncio>=1.4.0",
     "moto[server]>=5.2.3",
+    "asgi-lifespan>=2.1.0",
 ]
 
 [build-system]

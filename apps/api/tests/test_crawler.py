@@ -1,10 +1,8 @@
 import httpx
 import pytest
-from moto.server import ThreadedMotoServer
 from sqlalchemy import delete
 
 from app.core import storage
-from app.core.config import settings
 from app.core.db import AsyncSessionLocal
 from app.crawler.crawl import RobotsDisallowed, crawl_source
 from app.crawler.robots import can_fetch
@@ -26,21 +24,6 @@ def mock_handler(request: httpx.Request) -> httpx.Response:
 @pytest.fixture
 def mock_client():
     return httpx.AsyncClient(transport=httpx.MockTransport(mock_handler), base_url="http://test.example")
-
-
-@pytest.fixture
-def s3_env():
-    server = ThreadedMotoServer(port=0)
-    server.start()
-    host, port = server.get_host_and_port()
-    original_endpoint = settings.s3_endpoint_url
-    settings.s3_endpoint_url = f"http://{host}:{port}"
-    try:
-        storage.ensure_bucket()
-        yield
-    finally:
-        settings.s3_endpoint_url = original_endpoint
-        server.stop()
 
 
 async def test_can_fetch_respects_robots_txt(mock_client):
