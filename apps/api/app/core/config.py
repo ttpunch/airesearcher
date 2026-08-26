@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     s3_secret_key: str = "airesearcher-dev-secret"
     s3_bucket: str = "airesearcher-documents"
 
+    # Embeddings: Voyage AI (Anthropic's recommended provider) when a key is
+    # configured; otherwise app.core.embeddings falls back to a local,
+    # non-semantic provider so the pipeline still runs without one — see
+    # that module's docstring.
+    voyage_api_key: str | None = None
+    voyage_model: str = "voyage-3"
+    embedding_dim: int = 1024
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
