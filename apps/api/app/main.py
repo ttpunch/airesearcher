@@ -7,7 +7,7 @@ from app.core import storage
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
 from app.core.seed import seed_sources
-from app.routers import documents, health, sources
+from app.routers import documents, health, search, sources
 
 
 @asynccontextmanager
@@ -30,3 +30,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(sources.router)
 app.include_router(documents.router)
+app.include_router(search.router)

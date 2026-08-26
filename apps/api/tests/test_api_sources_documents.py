@@ -8,6 +8,7 @@ from sqlalchemy import delete, select
 
 from app.core.db import AsyncSessionLocal
 from app.main import app
+from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.source import Source
 
@@ -36,6 +37,18 @@ async def _cleanup_source(url: str) -> None:
             await db.execute(delete(Document).where(Document.source_id == source.id))
             await db.execute(delete(Source).where(Source.id == source.id))
             await db.commit()
+
+
+async def _cleanup_document(document_id: int) -> None:
+    # Deletes just the document/chunks, not the persistent "User Upload"
+    # source these tests attach to — that source is meant to survive
+    # across runs, unlike the document a single test creates under it.
+    # Left uncleaned before, this leaked chunks into hybrid-search's
+    # unscoped, whole-corpus results in later tests.
+    async with AsyncSessionLocal() as db:
+        await db.execute(delete(Chunk).where(Chunk.document_id == document_id))
+        await db.execute(delete(Document).where(Document.id == document_id))
+        await db.commit()
 
 
 async def test_create_and_list_source(client):
@@ -74,15 +87,18 @@ async def test_upload_pdf_creates_document_with_extracted_text(client):
     )
     assert resp.status_code == 201
     document = resp.json()
-    assert document["status"] == "extracted"
-    assert document["mime_type"] == "application/pdf"
+    try:
+        assert document["status"] == "extracted"
+        assert document["mime_type"] == "application/pdf"
 
-    sources_resp = await client.get("/api/sources")
-    upload_source = next(s for s in sources_resp.json() if s["url"] == "internal://user-upload")
-    assert upload_source["tier"] == "UP"
+        sources_resp = await client.get("/api/sources")
+        upload_source = next(s for s in sources_resp.json() if s["url"] == "internal://user-upload")
+        assert upload_source["tier"] == "UP"
 
-    docs_resp = await client.get("/api/documents", params={"source_id": upload_source["id"]})
-    assert any(d["id"] == document["id"] for d in docs_resp.json())
+        docs_resp = await client.get("/api/documents", params={"source_id": upload_source["id"]})
+        assert any(d["id"] == document["id"] for d in docs_resp.json())
+    finally:
+        await _cleanup_document(document["id"])
 
 
 async def test_process_endpoint_chunks_uploaded_document(client):
@@ -96,17 +112,20 @@ async def test_process_endpoint_chunks_uploaded_document(client):
     )
     document_id = upload_resp.json()["id"]
 
-    process_resp = await client.post(f"/api/documents/{document_id}/process")
-    assert process_resp.status_code == 200
-    body = process_resp.json()
-    assert body["document_id"] == document_id
-    assert body["status"] == "chunked"
-    assert len(body["chunks"]) > 0
-    assert "embedding" not in body["chunks"][0]
+    try:
+        process_resp = await client.post(f"/api/documents/{document_id}/process")
+        assert process_resp.status_code == 200
+        body = process_resp.json()
+        assert body["document_id"] == document_id
+        assert body["status"] == "chunked"
+        assert len(body["chunks"]) > 0
+        assert "embedding" not in body["chunks"][0]
 
-    # idempotent by default: calling again returns the same chunk ids
-    again_resp = await client.post(f"/api/documents/{document_id}/process")
-    assert [c["id"] for c in again_resp.json()["chunks"]] == [c["id"] for c in body["chunks"]]
+        # idempotent by default: calling again returns the same chunk ids
+        again_resp = await client.post(f"/api/documents/{document_id}/process")
+        assert [c["id"] for c in again_resp.json()["chunks"]] == [c["id"] for c in body["chunks"]]
+    finally:
+        await _cleanup_document(document_id)
 
 
 async def test_process_endpoint_404_for_missing_document(client):
