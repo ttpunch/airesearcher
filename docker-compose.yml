@@ -15,16 +15,39 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-airesearcher}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-airesearcher-dev-secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ./apps/api
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-airesearcher}:${POSTGRES_PASSWORD:-airesearcher}@postgres:5432/${POSTGRES_DB:-airesearcher}
       CORS_ORIGINS: http://localhost:3000
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-airesearcher}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-airesearcher-dev-secret}
+      S3_BUCKET: ${S3_BUCKET:-airesearcher-documents}
     ports:
       - "8000:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -52,6 +75,7 @@ services:
 
 volumes:
   postgres_data:
+  minio_data:
   api_venv:
   web_node_modules:
   web_next:

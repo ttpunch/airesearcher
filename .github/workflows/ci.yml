@@ -36,3 +36,4 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check .
       - run: uv run python -c "import app.main"
+      - run: uv run pytest
