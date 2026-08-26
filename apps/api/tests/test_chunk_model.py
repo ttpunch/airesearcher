@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import delete, select
 
 from app.core.config import settings
@@ -9,7 +11,11 @@ from app.models.source import Source
 
 async def test_chunk_stores_and_retrieves_real_vector():
     async with AsyncSessionLocal() as db:
-        source = Source(name="Chunk test source", url="internal://chunk-test", source_type="test", tier="T1")
+        # Unique per run — see test_pipeline.py's sample_document fixture
+        # for why a fixed URL here is a latent flakiness risk.
+        source = Source(
+            name="Chunk test source", url=f"internal://chunk-test-{uuid.uuid4()}", source_type="test", tier="T1"
+        )
         db.add(source)
         await db.commit()
         await db.refresh(source)

@@ -1,3 +1,5 @@
+import uuid
+
 import httpx
 import pymupdf
 import pytest
@@ -40,9 +42,10 @@ async def test_create_and_list_source(client):
     # Distinct from app.core.seed's real BHEL URLs, which the app's lifespan
     # now seeds on every startup (including this test, via LifespanManager)
     # — using one of those here would collide on the url unique constraint.
+    # Also unique per run, in case a previous run's cleanup didn't complete.
     payload = {
         "name": "BHEL Test Fixture Source",
-        "url": "https://www.bhel.com/test-fixture-source",
+        "url": f"https://www.bhel.com/test-fixture-source-{uuid.uuid4()}",
         "source_type": "bhel_official",
         "tier": "T1",
     }
@@ -80,6 +83,35 @@ async def test_upload_pdf_creates_document_with_extracted_text(client):
 
     docs_resp = await client.get("/api/documents", params={"source_id": upload_source["id"]})
     assert any(d["id"] == document["id"] for d in docs_resp.json())
+
+
+async def test_process_endpoint_chunks_uploaded_document(client):
+    # Long enough to produce multiple paragraphs/chunks, not just one.
+    text = "Uploaded BHEL document for hybrid search testing.\n\n" * 40
+    pdf_bytes = _make_pdf(text)
+
+    upload_resp = await client.post(
+        "/api/documents/upload",
+        files={"file": ("test.pdf", pdf_bytes, "application/pdf")},
+    )
+    document_id = upload_resp.json()["id"]
+
+    process_resp = await client.post(f"/api/documents/{document_id}/process")
+    assert process_resp.status_code == 200
+    body = process_resp.json()
+    assert body["document_id"] == document_id
+    assert body["status"] == "chunked"
+    assert len(body["chunks"]) > 0
+    assert "embedding" not in body["chunks"][0]
+
+    # idempotent by default: calling again returns the same chunk ids
+    again_resp = await client.post(f"/api/documents/{document_id}/process")
+    assert [c["id"] for c in again_resp.json()["chunks"]] == [c["id"] for c in body["chunks"]]
+
+
+async def test_process_endpoint_404_for_missing_document(client):
+    resp = await client.post("/api/documents/999999999/process")
+    assert resp.status_code == 404
 
 
 async def test_upload_rejects_non_pdf(client):

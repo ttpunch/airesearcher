@@ -6,9 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import storage
 from app.core.db import get_db
+from app.core.embeddings import EmbeddingProvider, get_embedding_provider
 from app.models.document import Document
 from app.models.source import Source
 from app.processing.pdf import PdfExtractionError, extract_text
+from app.processing.pipeline import NoExtractableText, process_document
+from app.schemas.chunk import ProcessDocumentResponse
 from app.schemas.document import DocumentRead
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
@@ -76,3 +79,22 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)) 
     await db.commit()
     await db.refresh(document)
     return document
+
+
+@router.post("/{document_id}/process", response_model=ProcessDocumentResponse)
+async def process_document_endpoint(
+    document_id: int,
+    force: bool = False,
+    db: AsyncSession = Depends(get_db),
+    embedding_provider: EmbeddingProvider = Depends(get_embedding_provider),
+):
+    document = await db.get(Document, document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    try:
+        chunks = await process_document(db, document, embedding_provider, force=force)
+    except NoExtractableText as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    return ProcessDocumentResponse(document_id=document.id, status=document.status, chunks=chunks)
