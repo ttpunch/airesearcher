@@ -35,6 +35,16 @@ GET  /api/search?q=...&alpha=0.5    # hybrid (vector + text) search with citatio
 
 Set `VOYAGE_API_KEY` in `.env` for real embeddings (Voyage AI). Without it, the API falls back to a deterministic but **not semantically meaningful** local embedder — the pipeline runs end-to-end, but search *ranking quality* requires a real key. See `app/core/embeddings.py`.
 
+## Asking the research assistant
+
+```
+POST /api/ask   {"question": "..."}
+```
+
+Runs the agentic research loop (Claude Agent SDK): it searches indexed documents, cites every factual claim as `[chunk:<id>]`, labels claims FACT/INFERENCE/RECOMMENDATION, and says "I cannot verify this from public sources" when the evidence doesn't support an answer. The response's `verified` field is only `true` when every citation was checked against what the agent actually retrieved. Try it in the browser at http://localhost:3000/ask.
+
+Requires `ANTHROPIC_API_KEY` (or another Claude Agent SDK-supported credential) in the API's environment — the endpoint calls the real SDK, unlike the automated tests, which stub it out (see `app/agent/research_agent.py`'s module docstring for why).
+
 ## Project structure
 
 ```

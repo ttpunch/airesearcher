@@ -42,6 +42,10 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-airesearcher}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-airesearcher-dev-secret}
       S3_BUCKET: ${S3_BUCKET:-airesearcher-documents}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      VOYAGE_MODEL: ${VOYAGE_MODEL:-voyage-3}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
