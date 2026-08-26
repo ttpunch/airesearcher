@@ -26,3 +26,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.ruff.lint]
+# B008: FastAPI's `Depends(...)` in argument defaults is the documented,
+# idiomatic dependency-injection pattern, not the mutable-default footgun
+# this rule exists to catch.
+ignore = ["B008"]
