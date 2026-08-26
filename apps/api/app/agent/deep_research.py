@@ -12,6 +12,13 @@ additive generalization, not a replacement.
 Same "mock-verified only" boundary as Week 4: query_fn is injectable so
 tests never invoke the real claude_agent_sdk.query() (see
 research_agent.py's module docstring for the full rationale).
+
+Same provider branching as research_agent.py too: when query_fn is unset
+and settings.llm_provider is "openrouter"/"deepseek" instead of the
+default "anthropic", this runs all three tools through
+app/agent/openai_compatible.py's hand-rolled tool-calling loop instead of
+the Claude Agent SDK. Every caller that matters for tests still passes
+query_fn explicitly, so that path is unaffected.
 """
 
 from collections.abc import AsyncIterator, Callable
@@ -40,7 +47,12 @@ from app.agent.multi_citations import (
     extract_cited_references,
     verify_references,
 )
+from app.agent.openai_compatible import (
+    get_openai_compatible_config,
+    run_tool_calling_loop,
+)
 from app.agent.tools import SEARCH_TOOL_NAME, make_search_tool
+from app.core.config import settings
 from app.core.embeddings import EmbeddingProvider
 
 SYSTEM_PROMPT = f"""You are the BHEL Deep Research Assistant. Given a research topic, you produce a
@@ -105,18 +117,28 @@ async def run_deep_research(
     embedding_provider: EmbeddingProvider,
     query_fn: QueryFn | None = None,
 ) -> DeepResearchResult:
-    query_fn = query_fn or sdk_query
     retrieved_ids_by_type: dict[str, set[int]] = {"chunk": set(), "tender": set(), "entity": set()}
-    options = build_deep_research_options(db, embedding_provider, retrieved_ids_by_type)
 
-    summary_text = ""
-    async for message in query_fn(prompt=topic, options=options):
-        if isinstance(message, AssistantMessage):
-            text_blocks = [block.text for block in message.content if isinstance(block, TextBlock)]
-            if text_blocks:
-                summary_text = "\n".join(text_blocks)
-        elif isinstance(message, ResultMessage) and message.result:
-            summary_text = message.result
+    if query_fn is not None or settings.llm_provider == "anthropic":
+        query_fn = query_fn or sdk_query
+        options = build_deep_research_options(db, embedding_provider, retrieved_ids_by_type)
+
+        summary_text = ""
+        async for message in query_fn(prompt=topic, options=options):
+            if isinstance(message, AssistantMessage):
+                text_blocks = [block.text for block in message.content if isinstance(block, TextBlock)]
+                if text_blocks:
+                    summary_text = "\n".join(text_blocks)
+            elif isinstance(message, ResultMessage) and message.result:
+                summary_text = message.result
+    else:
+        document_tool = make_search_tool(db, embedding_provider, retrieved_ids_by_type["chunk"])
+        tenders_tool = make_search_tenders_tool(db, retrieved_ids_by_type["tender"])
+        entities_tool = make_search_entities_tool(db, retrieved_ids_by_type["entity"])
+        config = get_openai_compatible_config()
+        summary_text = await run_tool_calling_loop(
+            config, SYSTEM_PROMPT, topic, tools=[document_tool, tenders_tool, entities_tool]
+        )
 
     cited_references = extract_cited_references(summary_text)
     verified, unverifiable = await verify_references(db, cited_references, retrieved_ids_by_type)

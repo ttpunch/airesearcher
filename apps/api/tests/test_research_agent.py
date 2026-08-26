@@ -90,3 +90,39 @@ async def test_build_agent_options_wires_the_search_tool_and_evidence_rules():
         assert "[chunk:<id>]" in options.system_prompt
         assert "I cannot verify this from public sources" in options.system_prompt
         assert options.permission_mode == "bypassPermissions"
+
+
+async def test_run_research_query_uses_openai_compatible_loop_when_provider_is_not_anthropic(monkeypatch):
+    """query_fn=None + a non-"anthropic" provider must route through
+    app.agent.openai_compatible.run_tool_calling_loop, never through the
+    real claude_agent_sdk.query() — stubbed here (not hitting real network,
+    same "mock-verified only" discipline as the query_fn tests above) to
+    prove the branch itself is wired correctly.
+    """
+    from app.agent import research_agent
+
+    captured: dict = {}
+
+    async def _fake_run_tool_calling_loop(config, system_prompt, user_prompt, tools, **kwargs):
+        captured["config"] = config
+        captured["tools"] = tools
+        return "Answer from an OpenAI-compatible model [chunk:404]."
+
+    monkeypatch.setattr(research_agent, "run_tool_calling_loop", _fake_run_tool_calling_loop)
+    monkeypatch.setattr(research_agent.settings, "llm_provider", "deepseek")
+    monkeypatch.setattr(research_agent.settings, "deepseek_api_key", "test-key")
+    monkeypatch.setattr(research_agent.settings, "deepseek_model", "deepseek-chat")
+
+    async with AsyncSessionLocal() as db:
+        provider = LocalHashEmbeddingProvider()
+        response = await run_research_query(db, "What does BHEL manufacture?", provider, query_fn=None)
+
+        assert "Answer from an OpenAI-compatible model" in response.answer
+        # chunk:404 was never actually retrieved via the (stubbed-out) tool,
+        # so it must still be rejected — the branch doesn't bypass citation
+        # verification just because the model backend changed.
+        assert response.citations == []
+        assert response.unverifiable_citation_count == 1
+
+    assert captured["config"].model == "deepseek-chat"
+    assert len(captured["tools"]) == 1

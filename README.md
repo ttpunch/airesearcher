@@ -41,9 +41,19 @@ Set `VOYAGE_API_KEY` in `.env` for real embeddings (Voyage AI). Without it, the 
 POST /api/ask   {"question": "..."}
 ```
 
-Runs the agentic research loop (Claude Agent SDK): it searches indexed documents, cites every factual claim as `[chunk:<id>]`, labels claims FACT/INFERENCE/RECOMMENDATION, and says "I cannot verify this from public sources" when the evidence doesn't support an answer. The response's `verified` field is only `true` when every citation was checked against what the agent actually retrieved. Try it in the browser at http://localhost:3000/ask.
+Runs the agentic research loop: it searches indexed documents, cites every factual claim as `[chunk:<id>]`, labels claims FACT/INFERENCE/RECOMMENDATION, and says "I cannot verify this from public sources" when the evidence doesn't support an answer. The response's `verified` field is only `true` when every citation was checked against what the agent actually retrieved. Try it in the browser at http://localhost:3000/ask.
 
-Requires `ANTHROPIC_API_KEY` (or another Claude Agent SDK-supported credential) in the API's environment — the endpoint calls the real SDK, unlike the automated tests, which stub it out (see `app/agent/research_agent.py`'s module docstring for why).
+### Model provider
+
+Set `LLM_PROVIDER` in `.env` to pick which model runs the loop:
+
+| `LLM_PROVIDER` | Backend | Required key |
+|---|---|---|
+| `anthropic` (default) | Claude Agent SDK — the primary, most-tested path (see AGENTS.md for why) | `ANTHROPIC_API_KEY` |
+| `openrouter` | Hand-rolled tool-calling loop against OpenRouter's OpenAI-compatible API — `OPENROUTER_MODEL` can be any model OpenRouter serves, not just DeepSeek's | `OPENROUTER_API_KEY` |
+| `deepseek` | Same loop against DeepSeek's API directly | `DEEPSEEK_API_KEY` |
+
+All three use the exact same tools and evidence-discipline system prompt (`app/agent/openai_compatible.py` for the latter two) — same citation verification either way, just a different model behind it. Whichever one is active, the endpoint calls the real API, unlike the automated tests, which stub it out (see `app/agent/research_agent.py`'s module docstring for why).
 
 ## Tender intelligence
 
@@ -75,7 +85,7 @@ GET  /api/research
 GET  /api/research/{id}
 ```
 
-Generalizes `/api/ask` into a topic-level report: the agent searches indexed documents, tenders, *and* KG entities together, citing each claim as `[chunk:<id>]`, `[tender:<id>]`, or `[entity:<id>]` — verified the same way as `/api/ask` (only counted if actually retrieved via a tool call this turn). Reports persist and are listed on http://localhost:3000/research. Same `ANTHROPIC_API_KEY` requirement as `/api/ask`.
+Generalizes `/api/ask` into a topic-level report: the agent searches indexed documents, tenders, *and* KG entities together, citing each claim as `[chunk:<id>]`, `[tender:<id>]`, or `[entity:<id>]` — verified the same way as `/api/ask` (only counted if actually retrieved via a tool call this turn). Reports persist and are listed on http://localhost:3000/research. Same `LLM_PROVIDER` options as `/api/ask` above.
 
 ## Opportunities, knowledge graph, and dashboard
 

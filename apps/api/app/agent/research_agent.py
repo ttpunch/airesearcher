@@ -11,6 +11,15 @@ no ANTHROPIC_API_KEY and the user asked not to spend real API usage
 verifying this here, so the orchestration logic (tool wiring, citation
 extraction, verification) is tested against that boundary while the
 search tool itself runs for real against a real DB.
+
+When `query_fn` is left unset AND `settings.llm_provider` is set to
+"openrouter" or "deepseek" instead of the default "anthropic", this skips
+the Claude Agent SDK entirely and runs the same search tool through
+app/agent/openai_compatible.py's hand-rolled tool-calling loop against
+that provider's OpenAI-compatible API instead — same evidence-discipline
+system prompt, same citation verification, different model backend. Every
+existing caller (including every test) always passes `query_fn`
+explicitly, so this branch is additive and changes no existing behavior.
 """
 
 from collections.abc import AsyncIterator, Callable
@@ -33,7 +42,12 @@ from app.agent.citations import (
     extract_cited_chunk_ids,
     verify_citations,
 )
+from app.agent.openai_compatible import (
+    get_openai_compatible_config,
+    run_tool_calling_loop,
+)
 from app.agent.tools import SEARCH_TOOL_NAME, make_search_tool
+from app.core.config import settings
 from app.core.embeddings import EmbeddingProvider
 
 SYSTEM_PROMPT = f"""You are the BHEL Public Research Assistant. You answer questions using ONLY
@@ -84,18 +98,24 @@ async def run_research_query(
     embedding_provider: EmbeddingProvider,
     query_fn: QueryFn | None = None,
 ) -> AskResponse:
-    query_fn = query_fn or sdk_query
     retrieved_chunk_ids: set[int] = set()
-    options = build_agent_options(db, embedding_provider, retrieved_chunk_ids)
 
-    answer_text = ""
-    async for message in query_fn(prompt=question, options=options):
-        if isinstance(message, AssistantMessage):
-            text_blocks = [block.text for block in message.content if isinstance(block, TextBlock)]
-            if text_blocks:
-                answer_text = "\n".join(text_blocks)
-        elif isinstance(message, ResultMessage) and message.result:
-            answer_text = message.result
+    if query_fn is not None or settings.llm_provider == "anthropic":
+        query_fn = query_fn or sdk_query
+        options = build_agent_options(db, embedding_provider, retrieved_chunk_ids)
+
+        answer_text = ""
+        async for message in query_fn(prompt=question, options=options):
+            if isinstance(message, AssistantMessage):
+                text_blocks = [block.text for block in message.content if isinstance(block, TextBlock)]
+                if text_blocks:
+                    answer_text = "\n".join(text_blocks)
+            elif isinstance(message, ResultMessage) and message.result:
+                answer_text = message.result
+    else:
+        search_tool = make_search_tool(db, embedding_provider, retrieved_chunk_ids)
+        config = get_openai_compatible_config()
+        answer_text = await run_tool_calling_loop(config, SYSTEM_PROMPT, question, tools=[search_tool])
 
     cited_ids = extract_cited_chunk_ids(answer_text)
     verified, unverifiable_ids = await verify_citations(db, cited_ids, retrieved_chunk_ids)

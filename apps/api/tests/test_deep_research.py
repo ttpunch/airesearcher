@@ -115,3 +115,36 @@ async def test_build_deep_research_options_wires_all_three_tools_and_evidence_ru
         assert "[entity:<id>]" in options.system_prompt
         assert "I cannot verify this from public sources" in options.system_prompt
         assert options.permission_mode == "bypassPermissions"
+
+
+async def test_run_deep_research_uses_openai_compatible_loop_when_provider_is_not_anthropic(monkeypatch):
+    """Same branch-wiring proof as research_agent's equivalent test: with
+    query_fn=None and a non-"anthropic" provider, this must go through
+    run_tool_calling_loop with all three tools, never the real SDK.
+    """
+    from app.agent import deep_research
+
+    captured: dict = {}
+
+    async def _fake_run_tool_calling_loop(config, system_prompt, user_prompt, tools, **kwargs):
+        captured["config"] = config
+        captured["tools"] = tools
+        return "Report from an OpenAI-compatible model [entity:404]."
+
+    monkeypatch.setattr(deep_research, "run_tool_calling_loop", _fake_run_tool_calling_loop)
+    monkeypatch.setattr(deep_research.settings, "llm_provider", "openrouter")
+    monkeypatch.setattr(deep_research.settings, "openrouter_api_key", "test-key")
+    monkeypatch.setattr(deep_research.settings, "openrouter_model", "deepseek/deepseek-chat")
+
+    async with AsyncSessionLocal() as db:
+        provider = LocalHashEmbeddingProvider()
+        result = await run_deep_research(db, "BHEL competitors", provider, query_fn=None)
+
+        assert "Report from an OpenAI-compatible model" in result.summary
+        # entity:404 was never actually retrieved via the (stubbed-out)
+        # tools, so citation verification must still reject it.
+        assert result.references == []
+        assert result.unverifiable_reference_count == 1
+
+    assert captured["config"].model == "deepseek/deepseek-chat"
+    assert len(captured["tools"]) == 3
