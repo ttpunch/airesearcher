@@ -10,7 +10,9 @@ The strategic basis for what gets built lives at [`docs/research/bhel-ai-strateg
 
 ## Current state
 
-This repo is **pre-code** as of the last update to this file: the strategy report is written, the architecture is decided, and a detailed Week 1 scaffolding plan exists but has not yet been executed. There is no `apps/` directory yet. Do not assume any of the structure below exists on disk — check first.
+**Week 1 scaffolding is done and verified.** `apps/api` (FastAPI) and `apps/web` (Next.js) both exist, wired together via `docker-compose.yml`, with `/health`, `/api/status`, and a `StatusCard` proving the full Next.js → FastAPI → Postgres chain. This was verified for real — not just by reading code: Postgres 16 + pgvector were installed locally (Docker's daemon wasn't available in the sandbox that built this), the Alembic migration ran against it, the API and web dev servers were started, and the rendered page was screenshotted showing both status badges green. The `docker-compose.yml`/Dockerfiles themselves are validated via `docker compose config` but not yet run end-to-end through actual `docker compose up` — do that once before relying on it in a real environment.
+
+Weeks 2–12 (crawler, chunking/embeddings, the MVP Q&A/evidence system, tender intelligence, and onward) are still unbuilt. See the roadmap below.
 
 ## Non-negotiable product principle
 
