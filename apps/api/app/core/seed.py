@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.entity import Entity, Relationship
+from app.models.opportunity import Opportunity
 from app.models.source import Source
 
 BHEL_SEED_SOURCES: list[dict[str, str]] = [
@@ -199,6 +200,134 @@ async def seed_entities(db: AsyncSession) -> int:
         )
         inserted += int(created)
 
+    if inserted:
+        await db.commit()
+    return inserted
+
+
+# The strategy report's Top 10 Strategic Initiatives (§10) and their
+# weighted scores from the Business Value/ROI Framework (§23) —
+# already-researched, already-sourced content from this project's own
+# Phase 3-6 work, not newly invented here. `feasibility="A"` on every row
+# reflects the report's own scoping decision that V1 builds public-data-only
+# versions of all ten (see §26-27's public->internal evolution path per
+# initiative) — an INFERENCE from that framing, not a literal per-item tag
+# in the report (only Initiative 1 is explicitly tagged "(A/B)" there).
+TOP_10_OPPORTUNITIES: list[dict] = [
+    {
+        "title": "BHEL Public Research Assistant (Q&A + evidence chain)",
+        "description": "No unified way to ask \"what does BHEL publicly say/do about X\" across scattered official pages, filings, and EoIs. Extends to internal SharePoint/PLM once access is granted, same architecture.",
+        "strategic_value": "Highest",
+        "weighted_score": 13,
+        "tech_summary": "Crawl + chunk + agentic retrieval + citation verification.",
+        "timeline": "4-6wk",
+        "risk": "Hallucination/citation accuracy, directly mitigated by the evidence system.",
+        "source_section": "strategy-report-top-10-item-3",
+    },
+    {
+        "title": "Tender Intelligence Platform",
+        "description": "Tender response is manual; Phase 1 found BHEL and L&T split an NTPC bulk-tender bundle — a pattern nobody is systematically tracking. Discovery + requirement extraction + bid-pattern analysis + win-probability, unified.",
+        "strategic_value": "High",
+        "weighted_score": 12,
+        "tech_summary": "Crawler + PDF extraction + agentic retrieval + classifier.",
+        "timeline": "6-8wk core",
+        "risk": "Portal fragility/rate-limits.",
+        "source_section": "strategy-report-top-10-item-1",
+    },
+    {
+        "title": "Competitive & Installed-Base Intelligence",
+        "description": "Toshiba is selling AI monitoring directly onto NTPC's BHEL-built fleet; BHEL has no equivalent visibility layer of its own.",
+        "strategic_value": "High",
+        "weighted_score": 12,
+        "tech_summary": "News crawl + entity extraction + registry DB.",
+        "timeline": "6wk",
+        "risk": "Attribution accuracy.",
+        "source_section": "strategy-report-top-10-item-2",
+    },
+    {
+        "title": "Maharatna Financial & Governance Dashboard",
+        "description": "BHEL is on formal government notice over the Maharatna PAT criterion; no live public-facing tracker exists.",
+        "strategic_value": "High",
+        "weighted_score": 11,
+        "tech_summary": "Structured filing extraction + threshold dashboard.",
+        "timeline": "4-6wk",
+        "risk": "Filing-format changes.",
+        "source_section": "strategy-report-top-10-item-4",
+    },
+    {
+        "title": "Customer Intelligence & Sales Signal Platform",
+        "description": "Sales lacks systematic visibility into customer capex plans and which competitor technologies customers are adopting.",
+        "strategic_value": "High",
+        "weighted_score": 10,
+        "tech_summary": "IR/news monitoring + entity linking.",
+        "timeline": "3-4wk",
+        "risk": "Noise/false positives.",
+        "source_section": "strategy-report-top-10-item-6",
+    },
+    {
+        "title": "Peer & Market Benchmarking Engine",
+        "description": "No continuous view of BHEL vs. L&T / Siemens Energy / GE Vernova on financials and orders.",
+        "strategic_value": "Medium-High",
+        "weighted_score": 9,
+        "tech_summary": "Structured competitor-filing extraction + comparison dashboard.",
+        "timeline": "4wk",
+        "risk": "Inconsistent competitor disclosure formats.",
+        "source_section": "strategy-report-top-10-item-5",
+    },
+    {
+        "title": "Supply Chain Risk & Import-Dependency Monitor",
+        "description": "BHEL has a formal FY26 government target to cut import dependency 10% YoY, with no monitoring tool tracking it.",
+        "strategic_value": "Medium-High",
+        "weighted_score": 9,
+        "tech_summary": "Supplier/trade-news monitoring + classification.",
+        "timeline": "4-6wk",
+        "risk": "Coverage gaps on niche components.",
+        "source_section": "strategy-report-top-10-item-7",
+    },
+    {
+        "title": "Emerging-Market Opportunity Radar (hydrogen / BESS / SMR)",
+        "description": "BHEL is already moving into hydrogen and storage (the Hystar and thyssenkrupp nucera partnerships found in Phase 1) but has no systematic way to spot the next MNRE/CEA opening.",
+        "strategic_value": "Medium-High",
+        "weighted_score": 9,
+        "tech_summary": "Policy monitoring + opportunity-scoring agent.",
+        "timeline": "4-6wk",
+        "risk": "False positives on early-stage policy signals.",
+        "source_section": "strategy-report-top-10-item-8",
+    },
+    {
+        "title": "Regulatory & Grid Intelligence Tracker",
+        "description": "BHEL's business is regulated across six-plus ministries/bodies (Heavy Industries, Power, CEA, CERC, MNRE, Railways, Defence) with no single tracking view.",
+        "strategic_value": "Medium-High",
+        "weighted_score": 8,
+        "tech_summary": "Multi-source monitoring + classification.",
+        "timeline": "4-6wk",
+        "risk": "Source fragmentation.",
+        "source_section": "strategy-report-top-10-item-10",
+    },
+    {
+        "title": "OT/Cybersecurity Threat Intelligence Monitor",
+        "description": "BHEL's DCS/OT footprint is a real target; no dedicated public-advisory monitoring was found for it.",
+        "strategic_value": "Medium-High",
+        "weighted_score": 8,
+        "tech_summary": "CERT-In/ICS-CERT feed monitoring, filtered to BHEL's known OT footprint.",
+        "timeline": "4-6wk",
+        "risk": "False negatives where BHEL's OT footprint isn't itself public.",
+        "source_section": "strategy-report-top-10-item-9",
+    },
+]
+
+
+async def seed_opportunities(db: AsyncSession) -> int:
+    """Returns the number of new opportunities inserted. Idempotent by
+    title (same pattern as the source/entity seeders).
+    """
+    inserted = 0
+    for entry in TOP_10_OPPORTUNITIES:
+        result = await db.execute(select(Opportunity).where(Opportunity.title == entry["title"]))
+        if result.scalar_one_or_none() is not None:
+            continue
+        db.add(Opportunity(feasibility="A", status="proposed", **entry))
+        inserted += 1
     if inserted:
         await db.commit()
     return inserted

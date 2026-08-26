@@ -27,6 +27,11 @@ class RelationshipRead(BaseModel):
     created_at: datetime
 
 
+class RelationshipWithNames(RelationshipRead):
+    from_entity_name: str
+    to_entity_name: str
+
+
 class EntityDetail(EntityRead):
     relationships: list[RelationshipRead]
 

@@ -6,12 +6,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core import storage
 from app.core.config import settings
 from app.core.db import AsyncSessionLocal
-from app.core.seed import seed_competitor_sources, seed_entities, seed_sources
+from app.core.seed import (
+    seed_competitor_sources,
+    seed_entities,
+    seed_opportunities,
+    seed_sources,
+)
 from app.routers import (
     ask,
+    dashboard,
     documents,
     entities,
     health,
+    opportunities,
+    relationships,
     research,
     search,
     sources,
@@ -26,6 +34,7 @@ async def lifespan(app: FastAPI):
         await seed_sources(db)
         await seed_competitor_sources(db)
         await seed_entities(db)
+        await seed_opportunities(db)
     yield
 
 
@@ -45,4 +54,7 @@ app.include_router(search.router)
 app.include_router(ask.router)
 app.include_router(tenders.router)
 app.include_router(entities.router)
+app.include_router(relationships.router)
 app.include_router(research.router)
+app.include_router(opportunities.router)
+app.include_router(dashboard.router)

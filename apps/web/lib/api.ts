@@ -133,3 +133,81 @@ export async function createResearchReport(topic: string): Promise<ResearchRepor
   }
   return res.json();
 }
+
+export type Opportunity = {
+  id: number;
+  title: string;
+  description: string;
+  feasibility: string;
+  strategic_value: string;
+  weighted_score: number;
+  tech_summary: string;
+  timeline: string;
+  risk: string;
+  source_section: string;
+  status: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+};
+
+export function fetchOpportunities(): Promise<Opportunity[]> {
+  return getJson<Opportunity[]>("/api/opportunities");
+}
+
+async function decideOpportunity(id: number, action: "approve" | "reject", approvedBy: string): Promise<Opportunity> {
+  const res = await fetch(`${getApiUrl()}/api/opportunities/${id}/${action}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ approved_by: approvedBy }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `Opportunity ${action} failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export function approveOpportunity(id: number, approvedBy: string): Promise<Opportunity> {
+  return decideOpportunity(id, "approve", approvedBy);
+}
+
+export function rejectOpportunity(id: number, approvedBy: string): Promise<Opportunity> {
+  return decideOpportunity(id, "reject", approvedBy);
+}
+
+export type Relationship = {
+  id: number;
+  from_entity_id: number;
+  to_entity_id: number;
+  from_entity_name: string;
+  to_entity_name: string;
+  relation_type: string;
+  description: string | null;
+  created_at: string;
+};
+
+export function fetchAllEntities(): Promise<Entity[]> {
+  return getJson<Entity[]>("/api/entities");
+}
+
+export function fetchRelationships(): Promise<Relationship[]> {
+  return getJson<Relationship[]>("/api/relationships");
+}
+
+export type DashboardSummary = {
+  counts: {
+    sources: number;
+    documents: number;
+    chunks: number;
+    tenders: number;
+    entities: number;
+    research_reports: number;
+    opportunities: number;
+  };
+  top_opportunities: Opportunity[];
+};
+
+export function fetchDashboardSummary(): Promise<DashboardSummary> {
+  return getJson<DashboardSummary>("/api/dashboard/summary");
+}

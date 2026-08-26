@@ -77,6 +77,33 @@ GET  /api/research/{id}
 
 Generalizes `/api/ask` into a topic-level report: the agent searches indexed documents, tenders, *and* KG entities together, citing each claim as `[chunk:<id>]`, `[tender:<id>]`, or `[entity:<id>]` — verified the same way as `/api/ask` (only counted if actually retrieved via a tool call this turn). Reports persist and are listed on http://localhost:3000/research. Same `ANTHROPIC_API_KEY` requirement as `/api/ask`.
 
+## Opportunities, knowledge graph, and dashboard
+
+```
+GET  /api/opportunities?status=proposed
+GET  /api/opportunities/{id}
+POST /api/opportunities/{id}/approve   {"approved_by": "..."}
+POST /api/opportunities/{id}/reject    {"approved_by": "..."}
+GET  /api/relationships
+GET  /api/dashboard/summary
+```
+
+`/api/opportunities` is seeded on startup with the strategy report's real Top 10 Strategic Initiatives and their weighted ROI scores — every one starts `status="proposed"` and only changes via an explicit approve/reject call (RECOMMENDATION-tagged output requires human approval; see AGENTS.md). `approved_by` is a plain name field, not real authentication. Browse and decide on them at http://localhost:3000/opportunities, browse the knowledge graph at http://localhost:3000/graph, and get an overview of everything indexed at http://localhost:3000/dashboard.
+
+## All pages
+
+| Page | What it shows |
+|---|---|
+| `/` | Landing page, nav, system status |
+| `/dashboard` | Aggregate counts across every table + top opportunities |
+| `/ask` | Single-question Q&A with citation-verified answers |
+| `/research` | Multi-source-class Deep Research reports |
+| `/tenders` | Tender list, bid-pattern summary |
+| `/competitors` | Seeded competitor entities with links to their real sites |
+| `/technologies` | Seeded technology concept entities |
+| `/opportunities` | Top 10 initiatives, with approve/reject |
+| `/graph` | Entities by type + relationships table |
+
 ## Project structure
 
 ```
