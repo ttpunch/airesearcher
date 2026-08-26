@@ -1,0 +1,22 @@
+# Node / Next.js
+node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/.env.local
+npm-debug.log*
+
+# Python / FastAPI
+.venv/
+__pycache__/
+*.pyc
+apps/api/.venv/
+
+# Env
+.env
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
