@@ -1,0 +1,1360 @@
+<title>BHEL AI Strategy</title>
+<style>
+  /* ================= Design tokens ================= */
+  :root{
+    --paper:#f5f6f8;
+    --surface:#ffffff;
+    --surface-2:#eceef1;
+    --ink:#161b22;
+    --ink-muted:#565f6b;
+    --line:#d9dde2;
+    --line-strong:#c3c9d1;
+
+    --blue:#2c4a6e;      /* blueprint — structure, FACT, links */
+    --blue-soft:#e4eaf1;
+    --copper:#a8611f;    /* brass/copper — emphasis, RECOMMENDATION */
+    --copper-soft:#f3e3d1;
+    --slate:#5b6570;     /* INFERENCE */
+    --slate-soft:#e7e9ec;
+
+    --tier-ink:#3a4451;
+    --tier-bg:#eef0f3;
+
+    --font-display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --font-body:'IBM Plex Serif',Georgia,'Times New Roman',serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Consolas,monospace;
+
+    --measure:68ch;
+    --radius:3px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#10151c;
+      --surface:#161d27;
+      --surface-2:#1c2430;
+      --ink:#e7ebf0;
+      --ink-muted:#9aa5b1;
+      --line:#2a3340;
+      --line-strong:#37424f;
+
+      --blue:#89aedb;
+      --blue-soft:#1c2b3d;
+      --copper:#e0a256;
+      --copper-soft:#3a2a18;
+      --slate:#a7b0bb;
+      --slate-soft:#212a35;
+
+      --tier-ink:#c3cbd5;
+      --tier-bg:#1c242e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#10151c;
+    --surface:#161d27;
+    --surface-2:#1c2430;
+    --ink:#e7ebf0;
+    --ink-muted:#9aa5b1;
+    --line:#2a3340;
+    --line-strong:#37424f;
+
+    --blue:#89aedb;
+    --blue-soft:#1c2b3d;
+    --copper:#e0a256;
+    --copper-soft:#3a2a18;
+    --slate:#a7b0bb;
+    --slate-soft:#212a35;
+
+    --tier-ink:#c3cbd5;
+    --tier-bg:#1c242e;
+  }
+
+  /* ================= Base ================= */
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16.5px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--copper-soft); color:var(--ink); }
+  a{ color:var(--blue); text-decoration-thickness:1px; text-underline-offset:2px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible{
+    outline:2px solid var(--copper); outline-offset:2px;
+  }
+  h1,h2,h3,h4{
+    font-family:var(--font-display);
+    color:var(--ink);
+    font-weight:600;
+    text-wrap:balance;
+    line-height:1.2;
+    margin:0 0 .5em;
+  }
+  p{ margin:0 0 1.1em; }
+  code, .mono{ font-family:var(--font-mono); }
+
+  /* ================= Shell layout ================= */
+  .shell{
+    display:grid;
+    grid-template-columns:272px minmax(0,1fr);
+    min-height:100vh;
+  }
+  .sidebar{
+    position:sticky; top:0; align-self:start;
+    height:100vh; overflow-y:auto;
+    padding:28px 20px 40px;
+    border-right:1px solid var(--line);
+    background:var(--surface);
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:8px;
+    font-family:var(--font-display); font-weight:700;
+    font-size:1.02rem; letter-spacing:.01em;
+    margin-bottom:2px;
+  }
+  .brand .mark{ color:var(--copper); font-family:var(--font-mono); font-weight:600; }
+  .brand-sub{
+    font-family:var(--font-mono); font-size:.72rem; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:.08em;
+    margin-bottom:22px;
+  }
+  nav.toc{ font-family:var(--font-display); font-size:.86rem; }
+  nav.toc ol{ list-style:none; margin:0; padding:0; counter-reset:ch; }
+  nav.toc li{ counter-increment:ch; }
+  nav.toc a{
+    display:flex; align-items:baseline; gap:8px;
+    color:var(--ink-muted); text-decoration:none;
+    padding:5px 8px 5px 0;
+    border-radius:var(--radius);
+  }
+  nav.toc a::before{
+    content:counter(ch, decimal-leading-zero);
+    font-family:var(--font-mono); font-size:.72rem; color:var(--line-strong);
+    flex:0 0 auto; padding-top:1px;
+  }
+  nav.toc a:hover{ color:var(--ink); background:var(--surface-2); }
+  nav.toc a.active{ color:var(--blue); font-weight:600; }
+  .status-dot{
+    flex:0 0 auto; width:6px; height:6px; border-radius:50%;
+    background:var(--line-strong); margin-top:6px; margin-left:auto;
+  }
+  .status-dot[data-status="done"]{ background:var(--copper); }
+  .status-dot[data-status="progress"]{ background:var(--blue); animation:pulse 2.2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .status-dot[data-status="progress"]{ animation:none; } }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .sidebar-foot{
+    margin-top:24px; padding-top:16px; border-top:1px solid var(--line);
+    font-family:var(--font-mono); font-size:.7rem; color:var(--ink-muted); line-height:1.6;
+  }
+  .legend{ display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .legend i{ width:8px; height:8px; border-radius:2px; display:inline-block; }
+
+  main{ min-width:0; }
+  .cover{
+    padding:56px clamp(24px,5vw,72px) 40px;
+    border-bottom:1px solid var(--line);
+  }
+  .cover .kicker{
+    font-family:var(--font-mono); font-size:.78rem; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--copper); margin-bottom:14px;
+  }
+  .cover h1{ font-size:clamp(1.9rem,3.4vw,2.7rem); max-width:16ch; }
+  .cover .dek{
+    font-family:var(--font-body); font-style:italic; color:var(--ink-muted);
+    font-size:1.15rem; max-width:52ch; margin-top:10px;
+  }
+  .cover-meta{
+    display:flex; flex-wrap:wrap; gap:22px; margin-top:26px;
+    font-family:var(--font-mono); font-size:.78rem; color:var(--ink-muted);
+  }
+  .cover-meta strong{ display:block; color:var(--ink); font-family:var(--font-display); font-size:.86rem; font-weight:600; }
+
+  .content{ padding:8px clamp(24px,5vw,72px) 96px; }
+  section.chapter{
+    max-width:1040px;
+    padding:52px 0 6px;
+    border-bottom:1px solid var(--line);
+  }
+  section.chapter:last-child{ border-bottom:none; }
+  .chapter-eyebrow{
+    font-family:var(--font-mono); font-size:.74rem; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px;
+  }
+  section.chapter h2{ font-size:1.7rem; max-width:28ch; }
+  .chapter-intro{ max-width:var(--measure); color:var(--ink-muted); font-size:1.03rem; }
+  .prose{ max-width:var(--measure); }
+  .prose h3{ font-size:1.18rem; margin-top:1.6em; }
+  .prose h4{ font-size:1rem; margin-top:1.3em; color:var(--copper); }
+  .prose ul, .prose ol{ padding-left:1.3em; margin:0 0 1.1em; }
+  .prose li{ margin-bottom:.4em; }
+
+  .pending{
+    max-width:var(--measure);
+    border:1px dashed var(--line-strong); border-radius:var(--radius);
+    padding:14px 16px; margin-top:8px;
+    font-family:var(--font-mono); font-size:.82rem; color:var(--ink-muted);
+    background:var(--surface);
+  }
+
+  /* tags: fact/inference/recommendation + tier */
+  .tag{
+    display:inline-flex; align-items:center; gap:5px;
+    font-family:var(--font-mono); font-size:.68rem; font-weight:600;
+    letter-spacing:.03em; text-transform:uppercase;
+    padding:2px 7px; border-radius:2px; white-space:nowrap;
+  }
+  .tag-fact{ background:var(--blue-soft); color:var(--blue); }
+  .tag-inference{ background:var(--slate-soft); color:var(--slate); }
+  .tag-recommendation{ background:var(--copper-soft); color:var(--copper); }
+  .tier{
+    font-family:var(--font-mono); font-size:.68rem; font-weight:600;
+    background:var(--tier-bg); color:var(--tier-ink);
+    padding:2px 6px; border-radius:2px;
+  }
+
+  .callout{
+    max-width:var(--measure);
+    border-left:3px solid var(--copper);
+    background:var(--surface); border-radius:0 var(--radius) var(--radius) 0;
+    padding:14px 18px; margin:20px 0;
+  }
+  .callout p:last-child{ margin-bottom:0; }
+  .callout .callout-label{
+    font-family:var(--font-mono); font-size:.68rem; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--copper); margin-bottom:6px; display:block;
+  }
+
+  /* tables */
+  .table-wrap{ overflow-x:auto; margin:18px 0 26px; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ border-collapse:collapse; width:100%; min-width:640px; font-size:.88rem; }
+  table caption{ text-align:left; font-family:var(--font-mono); font-size:.72rem; color:var(--ink-muted); padding:8px 12px; }
+  thead th{
+    text-align:left; font-family:var(--font-display); font-weight:600; font-size:.78rem;
+    color:var(--ink-muted); text-transform:uppercase; letter-spacing:.04em;
+    background:var(--surface-2); padding:9px 12px; border-bottom:1px solid var(--line);
+    position:sticky; top:0;
+  }
+  tbody td{ padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; font-family:var(--font-display); }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:var(--surface-2); }
+  tr.cat-row td{
+    background:var(--blue-soft); color:var(--blue);
+    font-family:var(--font-mono); font-weight:600; font-size:.72rem;
+    letter-spacing:.05em; text-transform:uppercase;
+    padding:7px 12px; border-bottom:1px solid var(--line);
+  }
+  .feas{ font-family:var(--font-mono); font-weight:700; font-size:.72rem;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:3px; }
+  .feas-a{ background:var(--blue-soft); color:var(--blue); }
+  .feas-b{ background:var(--slate-soft); color:var(--slate); }
+  .feas-c{ background:var(--copper-soft); color:var(--copper); }
+  .feas-d{ background:var(--tier-bg); color:var(--tier-ink); }
+  td .src{ font-family:var(--font-mono); font-size:.76rem; }
+  td.num, th.num{ font-variant-numeric:tabular-nums; text-align:right; }
+
+  .company-card{
+    max-width:var(--measure); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 18px; margin:16px 0; background:var(--surface);
+  }
+  .company-card h4{ margin-top:0; color:var(--ink); font-family:var(--font-display); }
+  .company-card .find{ margin:0 0 10px; padding-left:1.2em; }
+  .company-card .find li{ margin-bottom:8px; }
+
+  footer.report-foot{
+    padding:30px clamp(24px,5vw,72px) 60px; font-family:var(--font-mono);
+    font-size:.74rem; color:var(--ink-muted);
+  }
+
+  @media (max-width:880px){
+    .shell{ grid-template-columns:1fr; }
+    .sidebar{ position:relative; height:auto; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">/BH</span>EL AI Strategy</div>
+    <div class="brand-sub">Public-data-first · v0 draft</div>
+    <nav class="toc" aria-label="Report sections">
+      <ol id="toc-list"></ol>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="legend">
+        <span><i style="background:var(--copper)"></i> Section drafted</span>
+        <span><i style="background:var(--blue)"></i> Research in progress</span>
+        <span><i style="background:var(--line-strong)"></i> Not yet started</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="cover">
+      <div class="kicker">Independent research study — complete, all 7 phases</div>
+      <h1>An AI Strategy for BHEL Built Entirely on Public Information</h1>
+      <p class="dek">What a serious AI initiative for Bharat Heavy Electricals Limited looks like when it starts with zero internal data access — and how it can evolve once BHEL's own systems come into scope.</p>
+      <div class="cover-meta">
+        <div><strong>Scope</strong>29 report sections, public-data-only</div>
+        <div><strong>Method</strong>Sourced research, tiered evidence, FACT / INFERENCE / RECOMMENDATION labeling</div>
+        <div><strong>Status</strong><span id="cover-status">Complete — 114 use cases mapped, MVP recommended, full architecture &amp; roadmap specified</span></div>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+
+    <section class="chapter" id="exec-summary" data-title="Executive Summary" data-status="done">
+      <div class="chapter-eyebrow">01 · Overview</div>
+      <h2>Executive Summary</h2>
+      <div class="prose">
+        <p>BHEL is under real, dated pressure: it and SAIL are the only two of India's 14 Maharatna PSUs failing the profitability threshold, with a government committee formally reviewing possible downgrade — even as its order book hits record levels. At the same time, a direct competitor, Toshiba, is already deploying an AI monitoring layer across up to 165 NTPC power plants — NTPC being BHEL's own largest customer — while BHEL's public digital-initiative record is still dominated by procurement solicitations seeking outside technology partners, not deployed systems. Those two facts, both sourced to primary disclosures in §2–3, are the actual case for this report, not a generic "AI is important" premise.</p>
+        <p>Using only public information — no BHEL internal data, no assumptions about what BHEL may be doing privately — this report maps 114 AI use cases across BHEL's full business (§7), finds that roughly two-thirds are buildable on public data alone (§8), ranks the strongest 20 (§9) and 10 (§10), and recommends a single MVP: a <strong>BHEL Public Research Assistant</strong> with a citation-verified evidence chain, shipped alongside a Tender Intelligence module as its first concrete vertical (§11). It is deliberately the least flashy option on the list — chosen because it needs no internal-data access, matches the user's own Week 1–4 roadmap exactly, and can prove its own value by answering real strategic questions with cited evidence, live.</p>
+        <p>The architecture (§12–18) makes three decisions worth flagging up front: agentic retrieval instead of single-shot RAG, the Claude Agent SDK instead of LangGraph, and Postgres-only storage instead of a separate graph database — in each case choosing the simpler option deliberately, backed by current (2025–2026) evidence rather than framework fashion. A revised 12-week roadmap (§21), governance model (§20), and an honest ROI/build-buy-partner framework (§23–24) turn that architecture into something fundable, while §25–26 name real risks and explicit non-recommendations — including a hard line against any AI touching turbine, boiler, or grid control without a full deterministic-safety chain.</p>
+        <p>The report closes by arguing with itself: 22 real gaps this analysis couldn't cover from public data alone (§29), and a direct answer to what a BHEL CTO/CIO would actually fund in 2026 — the cheap, trust-building MVP, not the more exciting digital-twin or physical-AI initiatives, which this report explicitly recommends partnering for rather than building in-house.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="strategic-context" data-title="BHEL Strategic Context" data-status="done">
+      <div class="chapter-eyebrow">02 · Foundation</div>
+      <h2>BHEL Strategic Context</h2>
+      <p class="chapter-intro">Everything below is drawn from BHEL's own disclosures, government sources, and financial press — no internal BHEL data. Two findings matter more than the rest: BHEL is under real, dated <em>government</em> pressure to improve profitability, and its public R&amp;D/partnership activity is concentrated in energy-transition hardware (hydrogen, storage), not digital or AI.</p>
+
+      <div class="prose">
+        <h3>Corporate snapshot</h3>
+        <div class="table-wrap">
+          <table>
+            <caption>Financial &amp; ownership snapshot · figures in ₹ crore unless noted</caption>
+            <thead><tr><th>Metric</th><th>Value</th><th>Period</th><th>Evidence</th></tr></thead>
+            <tbody>
+              <tr><td>Revenue</td><td class="num">27,350</td><td>FY25, +19% YoY</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T1</span></td></tr>
+              <tr><td>Order inflow</td><td class="num">92,534</td><td>FY25 (record)</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T1</span></td></tr>
+              <tr><td>Order book</td><td class="num">2,04,375</td><td>as of 30 Jun 2025</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>Q1 FY26 revenue</td><td class="num">5,487</td><td>flat YoY</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>Q1 FY26 net loss</td><td class="num">(445.5)</td><td>vs (211.4) Q1 FY25</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>FY25 full-year PAT</td><td class="num">534</td><td>FY25</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>Government stake</td><td class="num">58.17%</td><td>post Feb-2026 OFS</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>Installed-base share</td><td>~54% thermal / 60% nuclear (secondary side) / 43% hydro</td><td>FY26, industry-reported</td><td><span class="tag tag-fact">Fact</span> <span class="tier">T4</span> — unverified vs. a primary CEA figure</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">Load-bearing tension</span>
+          <p>BHEL's order book and revenue are growing (record ₹92,534cr FY25 inflow) while quarterly operating results are loss-making (₹445.5cr net loss, Q1 FY26) and full-year PAT (₹534cr FY25) sits well below the ₹5,000cr/3-yr-average threshold required to keep Maharatna status. The government's own Inter-Ministerial Committee has put BHEL and SAIL on formal notice over this — the only two of 14 Maharatna CPSEs failing the criterion — with a possible downgrade to Navratna status. <span class="tag tag-inference">Inference</span> This is a direct, dated argument for AI/digitalization framed as <em>cost and margin</em> improvement, not just innovation theatre — it ties straight into the government-mandated FY26 performance MoU below. <span class="tier">T5</span></p>
+        </div>
+
+        <h3>R&amp;D</h3>
+        <p>BHEL runs 12 named Centres of Excellence (Simulators, CFD, Permanent Magnet Machines, Surface Engineering, <strong>Intelligent Machines &amp; Robotics</strong>, Machine Dynamics, Compressor &amp; Pumps, Nano Technology, UHV/Advanced Transmission, Power Electronics/IGBT, Control &amp; Instrumentation, Advanced Fabrication, Coal Research) plus a newly announced 4th "world-class" CoE (scope not specified in available sources), and five specialised institutes (Welding, Ceramics, Electric Traction, Pollution Control, plus one unnamed in public sources). <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> It self-reports ~2.5% of turnover on R&amp;D and 20% of turnover from products launched in the last 5 years <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> — self-reported, not independently audited. The FY26 government MoU formally commits BHEL to spend <strong>55% of current-year PBT</strong> on R&amp;D/innovation. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></p>
+        <p>A patent-analytics vendor reports 2,926 total patents (2,326 granted) — <span class="tag tag-fact">Fact</span> <span class="tier">T6</span>, unverified against IP India/WIPO, flagged for confirmation before any external use. No public, dated, multi-year technology roadmap for BHEL was located — only an R&amp;D capabilities brochure. <span class="tag tag-inference">Inference</span> (absence, not a negative claim about existence).</p>
+
+        <h3>Recent technology partnerships — concentrated in energy transition, not digital</h3>
+        <div class="table-wrap">
+          <table>
+            <caption>2025–2026 technology MoUs / JVs / collaboration agreements</caption>
+            <thead><tr><th>Partner</th><th>Scope</th><th>Evidence</th></tr></thead>
+            <tbody>
+              <tr><td>ONGC</td><td>Renewables/hydrogen JV exploration, National Green Hydrogen Mission</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T1</span></td></tr>
+              <tr><td>Horizon Fuel Cell (Singapore)</td><td>10-yr exclusive MoU, hydrogen fuel-cell rolling stock</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T1/T5</span></td></tr>
+              <tr><td>RECPDCL</td><td>50:50 JV, renewables/infra execution</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>E2S (South Korea)</td><td>Static/brushless excitation systems</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T1</span></td></tr>
+              <tr><td>NPCIL</td><td>PHWR nuclear power plants</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T1</span></td></tr>
+              <tr><td>Hystar AS (Norway)</td><td>PEM electrolysers (2026)</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+              <tr><td>thyssenkrupp nucera India</td><td>Alkaline electrolyser systems (Jul 2026)</td><td class="src"><span class="tag tag-fact">Fact</span> <span class="tier">T5</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><span class="tag tag-inference">Inference</span> Every dated 2025–2026 technology partnership found is in energy-transition hardware (hydrogen, storage, nuclear, excitation systems) — none in digital, data, or AI. That's a real gap this report's opportunity map has to reckon with, not a coincidence of what search surfaced.</p>
+
+        <h3>Government &amp; regulatory context</h3>
+        <ul>
+          <li><strong>FY26 performance MoU</strong> (Ministry of Heavy Industries): Value of Production ₹33,700cr, exports ₹600cr, 10% YoY cut in import consumption, 37% of procurement via GeM, 55% of PBT to R&amp;D, receivables held under 90 days. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+          <li><strong>CEA / Ministry of Power</strong>: National Electricity Plan and government targets point to ~93GW of new thermal capacity by FY32; trade press (not CEA directly) frames BHEL as the dominant domestic thermal-EPC bidder. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> (plan) <span class="tag tag-inference">Inference</span> (BHEL's dominance framing is press characterization)</li>
+          <li><strong>CERC</strong> 2025 tariff amendment introduces a framework for Integrated Energy Storage Systems attached to generation/transmission — a regulatory tailwind for a BHEL storage/renewables-hybrid push. <span class="tag tag-fact">Fact</span> <span class="tier">T4</span></li>
+          <li><strong>MNRE</strong> National Green Hydrogen Mission (₹19,744cr, 5MT/yr by 2030) — BHEL was among bidders for SIGHT Tranche-I electrolyser incentives alongside Adani, JSW, L&amp;T. <span class="tag tag-fact">Fact</span> <span class="tier">T4</span></li>
+          <li><strong>PLI-ACC battery storage</strong>: BHEL floated an EoI for a gigafactory SPV but does not appear among the four named PLI beneficiaries (Reliance New Energy Solar, Ola Electric, Hyundai Global Motors, Rajesh Exports). <span class="tag tag-inference">Inference</span> — absence from the list, not a direct statement of rejection. <span class="tier">T1/T6</span></li>
+          <li><strong>Defence</strong>: Goa Shipyard ordered an upgraded Super Rapid Gun Mount from BHEL Haridwar, framed around AatmaNirbhar Bharat. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+          <li><strong>Railways</strong>: BHEL–Titagarh consortium won ~₹23,000cr (incl. 35-yr maintenance) to build 80 Vande Bharat trainsets, as L2 bidder in a 200-train national tender. <span class="tag tag-fact">Fact</span> <span class="tier">T1/T5</span></li>
+        </ul>
+
+        <h3>Tender &amp; procurement footprint</h3>
+        <p>BHEL runs its own e-procurement portal and centralised a Procurement Cell for power-project sub-contracting since January 2024. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> It is a high-volume tender <em>issuer</em> (aggregator sites report roughly 300–1,000+ live/historical tenders at any time — volatile, low-tier counts, not to be cited precisely) and, as a <em>bidder</em>, is under a formal FY26 target to source 37% of procurement via GeM. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> A precise, current CPPP/GeM tender count could not be pulled via general web search (those portals are largely non-indexed) — stated as a limitation, not filled with a guess.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="competitive-landscape" data-title="Competitive Landscape" data-status="done">
+      <div class="chapter-eyebrow">02b · Foundation</div>
+      <h2>Competitive Landscape</h2>
+      <p class="chapter-intro">What BHEL's actual competitors — domestic and global — are doing in the segments that overlap BHEL's core business, with a specific eye on who is using AI/digital capability as a stated sales differentiator in India.</p>
+
+      <div class="prose">
+        <div class="company-card">
+          <h4>Hitachi Energy — partner and gatekeeper at once</h4>
+          <ul class="find">
+            <li>BHEL's own consortium partner on its largest current HVDC project: the ±800kV, 6,000MW Bhadla–Fatehpur LCC terminal station (~950km, Rajasthan), LoI Feb 2025, targeted completion ~2029. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span> (both companies' own releases)</li>
+            <li>Simultaneously named by industry analysts as one of only three MNCs (with Siemens Energy, GE Vernova) controlling India's high-voltage transmission technology — an explicit "entry barrier" against domestic players like BHEL. <span class="tag tag-inference">Inference</span> (analyst framing) <span class="tier">T4/T5</span></li>
+            <li>Investing ~₹2,000cr in a new large-power-transformer plant (Karjan, Vadodara, FY28 completion) explicitly citing HVDC, generation, <strong>AI data centres</strong>, and industrial demand as target markets. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+          </ul>
+        </div>
+
+        <div class="company-card">
+          <h4>Toshiba Energy Systems — the clearest AI threat found, not a hardware one</h4>
+          <ul class="find">
+            <li>Toshiba JSW signed with <strong>NTPC — BHEL's single largest customer</strong> — to deploy its <strong>EtaPRO</strong> AI monitoring/diagnostics system across up to <strong>165 power plants</strong> from spring 2027; explicitly NTPC's first deployment of this kind. EtaPRO already covers 763GW of generation capacity across 60+ countries. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+            <li><span class="tag tag-inference">Inference</span> This risks disintermediating BHEL from the data/analytics layer of its own installed base — regardless of who wins future hardware orders, a rival OEM's software sits on top of NTPC's BHEL-supplied boilers, turbines and generators. Arguably a more urgent strategic risk than losing a single tender.</li>
+            <li>Toshiba is investing ¥55bn (~$370M) to more than double Japan+India T&amp;D production capacity, targeting India's first 400kV modular GIS system by August 2026. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+          </ul>
+        </div>
+
+        <div class="company-card">
+          <h4>Larsen &amp; Toubro — the most consistent domestic head-to-head</h4>
+          <ul class="find">
+            <li>In a single NTPC bulk-tender bundle, L&amp;T emerged L1 for a ~₹22,500cr package (NTPC Lara Stage-III + DVC-CIL Chandrapura) while BHEL emerged L1 for a separate ~₹10,300cr package — i.e. the same tender round split business between the two. <span class="tag tag-fact">Fact</span> <span class="tier">T4/T5</span></li>
+            <li>Won India's largest pumped-hydro-storage order (Torrent Power, Saidongar-1, 3GW) — a hydro-mechanical segment BHEL also serves. <span class="tag tag-fact">Fact</span> <span class="tier">T5</span></li>
+            <li>Building AI infrastructure at scale (NVIDIA-partnered gigawatt AI factory, "L&amp;T Cognitive Services") but <span class="tag tag-inference">Inference</span> no public L&amp;T digital-twin product for power-generation equipment (comparable to MHI's TOMONI) was found — a capability gap L&amp;T could close quickly given its AI-infrastructure investment.</li>
+          </ul>
+        </div>
+
+        <h3>Everyone else researched</h3>
+        <div class="table-wrap">
+          <table>
+            <caption>Secondary competitors · segment overlap and digital signal</caption>
+            <thead><tr><th>Company</th><th>Segment overlap with BHEL</th><th>Recent move</th><th>AI / digital signal</th></tr></thead>
+            <tbody>
+              <tr><td>Siemens Energy</td><td>Gas/steam turbines to 800MW; VSC-HVDC</td><td>Pugalur–Trichur VSC-HVDC link commissioned</td><td>Explicit "Industrial AI Operating System" + Digital Twin Composer marketed in India <span class="tier">T1</span></td></tr>
+              <tr><td>GE Vernova</td><td>Gas turbines, electrification, T&amp;D</td><td>Global backlog 116GW (Q2'26); India 3.8MW turbine + Pune capacity</td><td>"SmartSignal" APM — $1.6B O&amp;M savings claimed, 7,000+ assets monitored <span class="tier">T1</span></td></tr>
+              <tr><td>Mitsubishi Heavy Industries</td><td>Gas turbines</td><td>Doubling global turbine capacity in 2 yrs; no India-specific order found</td><td>"TOMONI" — most mature named AI/digital-twin O&amp;M product surveyed <span class="tier">T1/T4</span></td></tr>
+              <tr><td>ABB India</td><td>Rail/metro, industrial, data centres</td><td>$75M 2026 India investment, 5 sites + 2 new R&amp;D labs</td><td>No India-specific AI announcement found (gap vs. peers)</td></tr>
+              <tr><td>Doosan Enerbility</td><td>SMR/nuclear components</td><td>US/UK SMR component deals; no India order found</td><td>"PreVision", "D-Vision" (NVIDIA-accelerated defect detection) <span class="tier">T1/T4</span></td></tr>
+              <tr><td>Dongfang Electric</td><td>Thermal/renewable equipment</td><td>RMB 88.58bn new orders FY25</td><td>"Dongfang Zhiyuan" energy-specific LLM; no India deployment found <span class="tier">T4/T6</span></td></tr>
+              <tr><td>Shanghai Electric</td><td>Thermal/wind equipment</td><td>RMB 109.8bn H1'25 new orders</td><td>"AI-Native Smart Factory" architecture + 51 named AI models (WAIC 2026) <span class="tier">T5</span></td></tr>
+              <tr><td>Hyundai Electric</td><td>Transformers, rotating machines</td><td>2026 order target raised to $5.19B; US-focused capacity</td><td>No India order or AI signal found</td></tr>
+              <tr><td>Thermax</td><td>Boilers, FGD, hydrogen</td><td>₹1,600cr USC boiler order; HydrogenPro &amp; Ceres Power electrolyser tie-ups</td><td>No AI/digital signal found</td></tr>
+              <tr><td>Kirloskar Brothers</td><td>Pumps, industrial systems</td><td>14,000+ pump-set IOCL order</td><td>"Colligo" — in-house AI for pump ID/fault diagnosis/repair-cost estimation <span class="tier">T5</span></td></tr>
+              <tr><td>Bharat Electronics (BEL)</td><td>Defence electronics (adjacent)</td><td>FY26 order book ~₹74,000cr</td><td>AI-based naval/simulator solutions reported <span class="tier">T5</span> (thin sourcing)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">Synthesis</span>
+          <p>Three competitors matter most, each differently: <strong>Hitachi Energy</strong> for the odd co-opetition (partner on BHEL's flagship HVDC job, gatekeeper on the high-voltage technology BHEL is structurally weaker in), <strong>Toshiba</strong> for proving a rival OEM can sell an AI layer directly onto NTPC's BHEL-built fleet, and <strong>L&amp;T</strong> for being the most consistent same-tender domestic rival with AI infrastructure it hasn't yet pointed at power equipment. <span class="tag tag-recommendation">Recommendation</span> Toshiba's EtaPRO/NTPC deal is the single most useful reference point for scoping this project's MVP — it's proof that AI-on-top-of-installed-base is fundable and wanted by BHEL's own largest customer, and BHEL currently has no public answer to it.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="digital-maturity" data-title="Public Digital Maturity" data-status="done">
+      <div class="chapter-eyebrow">03 · Foundation</div>
+      <h2>BHEL Public Digital Maturity</h2>
+      <p class="chapter-intro">Labeled carefully by maturity — deployed vs. pilot vs. still-procuring — because that distinction is the whole point of this section.</p>
+
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Named systems and initiatives, by actual maturity</caption>
+            <thead><tr><th>System</th><th>What it is</th><th>Maturity</th><th>Evidence</th></tr></thead>
+            <tbody>
+              <tr><td><strong>RMDS</strong></td><td>Remote monitoring &amp; diagnostics, plant-wide advisory</td><td><span class="tag tag-fact">Deployed</span> — first commercial project live at BPCL Mumbai Refinery, 24×7</td><td><span class="tier">T1/T5</span></td></tr>
+              <tr><td>PALM</td><td>Android app, real-time remote monitoring of process parameters</td><td>Existing product; deployment scale/date not confirmed</td><td><span class="tier">T1</span></td></tr>
+              <tr><td>SPMS</td><td>IIoT tracking of Man/Material/Machine on projects</td><td>Existing product; deployment scale/date not confirmed. <em>Note: acronym collision with an unrelated BHEL Navy sonar system of the same initials.</em></td><td><span class="tier">T1</span></td></tr>
+              <tr><td>Industry 4.0 / IIoT / "Digital Worker" (AR/VR)</td><td>RCM, IIoT apps, wearables, intelligent 3D modelling/P&amp;ID, document digitalisation</td><td><strong>Procurement stage</strong> — EoI seeking an external technology partner; BHEL's own phrase is "foraying into"</td><td><span class="tier">T1</span></td></tr>
+              <tr><td>DigiPAM</td><td>Digitalised Plant Asset Management — QR/barcode assets, RTLS wearable tags, 99% accuracy target</td><td>Procurement stage; EoI appears to date to ~2021, current status unconfirmed</td><td><span class="tier">T1</span></td></tr>
+              <tr><td>Data Warehouse / BI / Advanced Analytics</td><td>Enterprise-wide BI &amp; analytics implementation</td><td>Procurement stage; EoI ~2021, no completion evidence found</td><td><span class="tier">T1</span></td></tr>
+              <tr><td>MOLA</td><td>—</td><td><strong>Not found</strong> under this name in any public source searched</td><td>—</td></tr>
+              <tr><td>AI/ML, robotics, AR/VR, smart manufacturing (general)</td><td>—</td><td><strong>Not found</strong> beyond the "Intelligent Machines &amp; Robotics" CoE, which is a research capability, not a stated deployment</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">Load-bearing finding</span>
+          <p>BHEL's public digital signal is dominated by <strong>procurement solicitations</strong> — EoIs seeking an external partner to build Industry 4.0/IIoT/AR-VR/BI capability — not by case studies of deployed systems. RMDS-at-BPCL is the one clear, named, dated operational exception. <span class="tag tag-inference">Inference</span> Read plainly, BHEL is earlier in its digital journey than its R&amp;D-CoE naming or press language suggests, and has been seeking an external Industry 4.0 partner for several years without a confirmed public outcome — which is exactly the kind of gap a public-data-first AI platform can credibly target without needing internal access.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Placeholder chapters for remaining phases ===== -->
+    <section class="chapter" id="ai-landscape" data-title="2026 AI Technology Landscape" data-status="done">
+      <div class="chapter-eyebrow">04 · Landscape</div>
+      <h2>2026 AI Technology Landscape</h2>
+      <p class="chapter-intro">Search results this pass were thick with SEO-farm "2026 AI trends" blogs producing plausible but unverifiable numbers. Findings below lean on Gartner, Anthropic/Microsoft/NVIDIA primary sources, CNCF, and arXiv where possible; blog-only claims are marked and should be treated as directional, not precise.</p>
+
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Technology category × 2026 maturity</caption>
+            <thead><tr><th>Category</th><th>2026 status</th><th>Maturity</th></tr></thead>
+            <tbody>
+              <tr><td>Agentic AI / multi-agent systems</td><td>Gartner: only <strong>17%</strong> of orgs have deployed agents, though <strong>60%+</strong> plan to within 2 years; sits at "Peak of Inflated Expectations." Gartner explicitly names <strong>"agent-washing"</strong> — chatbots/RPA rebranded as agents.</td><td>Pilot → early production</td></tr>
+              <tr><td>Model Context Protocol (MCP)</td><td>Donated by Anthropic to the Linux-Foundation-governed <strong>Agentic AI Foundation</strong>, Dec 2025; Nov-2025 spec adds OAuth resource-server hardening, async tasks. ~2,000 registry entries.</td><td>Emerging → mature</td></tr>
+              <tr><td>Agentic retrieval / GraphRAG</td><td>Azure AI Search ships <strong>"Agentic Retrieval"</strong> as a documented, partially-GA product feature — Microsoft's own guidance: <em>"for new RAG implementations, start with agentic retrieval."</em> Microsoft's <strong>LazyGraphRAG</strong> cuts GraphRAG indexing cost ~1000×.</td><td>Emerging production</td></tr>
+              <tr><td>Digital twins / physical AI</td><td>Gartner rates core "Digital Twins for Products" <strong>"mature mainstream"</strong> on its 2026 Discrete Manufacturing Hype Cycle. The <em>agentic</em> layer on top (autonomous action, not just simulation) is newer — Siemens+NVIDIA building a fully AI-driven adaptive factory pilot at Erlangen.</td><td>Mature core / emerging agentic layer</td></tr>
+              <tr><td>Time-series &amp; industrial foundation models</td><td>Time-series models (Amazon Chronos-2, Salesforce MOIRAI-2) are real, zero-shot-capable, deployed. Broader multimodal "industrial foundation models" show ~46% pilot-abandonment in cited surveys.</td><td>Split: mature (time-series) / high-risk pilot (broader)</td></tr>
+              <tr><td>AI for engineering (CAD/CFD/FEA)</td><td>Ansys SimAI, Autodesk generative design are shipped products (AI <em>surrogate models</em> for physics simulation, 10–100× faster than solvers — not AI replacing engineering judgment). Fully agentic CAD-generation-with-validation is arXiv-stage research.</td><td>Emerging production (surrogate modeling) / research (agentic CAD)</td></tr>
+              <tr><td>Reasoning / long-context / coding agents</td><td>Claude Opus 5 (Jul 2026, 1M-token context). OpenAI's <strong>GDPval</strong> benchmark: frontier models "approaching industry experts" on well-scoped knowledge-work deliverables, improving ~linearly. Real, documented gap between <em>advertised</em> and <em>usable</em> context length across all vendors.</td><td>Mature for well-scoped tasks</td></tr>
+              <tr><td>AI observability / evaluation</td><td>OpenTelemetry GenAI semantic conventions, CNCF-governed, now the common instrumentation layer under Langfuse, Arize, Bedrock AgentCore, Datadog. 2026 best practice: metric checks + LLM-as-judge + human review on the flagged tail.</td><td>Mature / standard practice</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">Framing device</span>
+          <p><span class="tag tag-recommendation">Recommendation</span> Use OpenAI's GDPval finding as the honest calibration for what this platform should promise: <em>approaching expert quality on well-scoped deliverables, not a replacement for engineering judgment.</em> Combined with Gartner's 17%-actual-deployment figure, this also reframes a BHEL agentic-AI initiative as a credible early move rather than "catching up" — most industrial peers are still at pilot stage, not production.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="industrial-ai" data-title="Industrial AI Landscape" data-status="done">
+      <div class="chapter-eyebrow">05 · Landscape</div>
+      <h2>Industrial AI Landscape</h2>
+      <p class="chapter-intro">What the major industrial-automation and cloud vendors have actually shipped in 2025–2026 — not marketing claims. Three products stand out as direct benchmarks for BHEL's own business; the rest are summarized in the table below.</p>
+
+      <div class="prose">
+        <div class="company-card">
+          <h4>Emerson Ovation AI Agents — the closest analog to BHEL's own control-systems business</h4>
+          <ul class="find">
+            <li>Ovation is a DCS platform for power/water generation control — <strong>the same market segment as BHEL's own control systems.</strong> Five purpose-built agents (Sequence Assistant, Alarm Insight, Predictive Maintenance, Root Cause, Loop Performance Monitor) launching fall 2026, with 28 more roadmapped. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+            <li><span class="tag tag-inference">Inference</span> Explicitly human-in-the-loop (agents recommend, operators approve) — a defensible, auditable design pattern for a PSU in a safety-critical sector, and a concrete feature-by-feature benchmark BHEL could target.</li>
+          </ul>
+        </div>
+        <div class="company-card">
+          <h4>Honeywell Experion Cognition — autonomous control room, shipping not hypothetical</h4>
+          <ul class="find">
+            <li>GA Q3 2026, live named customer <strong>Borouge International</strong> (petrochemicals). Three specialized agents (sensor-malfunction, process-anomaly, deterministic rule-based) predicting alarm incidents 5–10 minutes ahead in pilots. <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+          </ul>
+        </div>
+        <div class="company-card">
+          <h4>Tata Steel on Google Gemini Enterprise — the India heavy-industry reference point</h4>
+          <ul class="find">
+            <li>300+ autonomous agents in production across global operations (workflow automation, safety, decision-making). <span class="tag tag-fact">Fact</span> <span class="tier">T1</span></li>
+            <li><span class="tag tag-inference">Inference</span> Undercuts any "not feasible for Indian heavy industry yet" framing — a same-country, comparable-scale industrial peer is already running a large agent fleet in production.</li>
+          </ul>
+        </div>
+
+        <h3>Everyone else researched</h3>
+        <div class="table-wrap">
+          <table>
+            <caption>Named 2025–2026 products, by vendor</caption>
+            <thead><tr><th>Vendor</th><th>Product</th><th>Status / evidence</th></tr></thead>
+            <tbody>
+              <tr><td>ABB</td><td>Ability Genix Copilot (on Azure OpenAI); Industrial Knowledge Vault</td><td>Shipped; vendor-claimed 15–18% energy optimization, unverified <span class="tier">T1</span></td></tr>
+              <tr><td>Schneider Electric</td><td>EcoStruxure Automation Expert + Azure AI, "agentic manufacturing"</td><td>Trade-show co-innovation demo, not GA <span class="tier">T1</span></td></tr>
+              <tr><td>Rockwell Automation</td><td>FactoryTalk Orchestration; ResilientEdge</td><td>Launched at Automate 2026 <span class="tier">T1</span></td></tr>
+              <tr><td>Hitachi / Hitachi Energy</td><td>HMAX Energy (physics-based AI for switchgear/transformers/substations); Lumada</td><td>Launched Mar 2026; vendor-claimed 60% breakdown-loss reduction, unverified <span class="tier">T1</span></td></tr>
+              <tr><td>NVIDIA</td><td>Omniverse "Physical AI Operating System"</td><td>Shared infra layer underneath Siemens, Dassault, AVEVA, ABB, Microsoft <span class="tier">T1</span></td></tr>
+              <tr><td>Microsoft</td><td>Foundry Agent Service</td><td>Named customers: Iberdrola (energy), Corvus Energy <span class="tier">T1</span></td></tr>
+              <tr><td>Google Cloud</td><td>Gemini Enterprise Agent Platform</td><td>Named: Tata Steel (300+ agents), NextEra Energy, GE Appliances (800+ agents) <span class="tier">T1</span></td></tr>
+              <tr><td>IBM</td><td>watsonx Orchestrate + Agentic Control Plane</td><td>Named: Elsewedy Electric (heavy-electrical peer) <span class="tier">T1</span></td></tr>
+              <tr><td>Dassault Systèmes</td><td>"Virtual Companions" (AURA/LEO/MARIE) in 3DEXPERIENCE</td><td>Launched Jul 2026 <span class="tier">T1</span></td></tr>
+              <tr><td>AVEVA</td><td>CONNECT + industrial knowledge graph "twin builder"</td><td>Roadmapped Q1 2027 <span class="tier">T1</span></td></tr>
+              <tr><td>SAP</td><td>Joule (40+ agents) incl. Production Planning Agent</td><td>Relevant if BHEL's ERP is SAP <span class="tier">T1</span></td></tr>
+              <tr><td>AWS</td><td>Bedrock "Physical AI and Agentic Manufacturing"</td><td>Event demo, no named large deployment found — thinnest evidence of the group</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <span class="callout-label">Structural pattern, not a single vendor claim</span>
+          <p><span class="tag tag-inference">Inference</span> NVIDIA has become the shared physical-AI/simulation substrate underneath nearly every other vendor above (Dassault, AVEVA, ABB, Siemens, Microsoft all announced NVIDIA-based work in the same Feb–Apr 2026 window) rather than each vendor building proprietary physics engines. That's a real signal for a build-vs-partner call later in this report: the 2026 industry norm is to license/partner for the simulation substrate, not build it in-house.</p>
+        </div>
+      </div>
+    </section>
+    <section class="chapter" id="opportunity-map" data-title="BHEL AI Opportunity Map" data-status="done">
+      <div class="chapter-eyebrow">06 · Opportunities</div>
+      <h2>BHEL AI Opportunity Map</h2>
+      <p class="chapter-intro">114 use cases across every part of BHEL's business — not just machines — scored on a consistent scale so they can be compared and cut. Every row is grounded in something specific from Phases 1–2: a named BHEL initiative, a competitor's product, a government policy, or a documented technology capability — not a generic "AI can help with X."</p>
+      <div class="prose">
+        <h3>Scoring legend</h3>
+        <ul>
+          <li><strong>Feasibility</strong> — <span class="feas feas-a">A</span> buildable now on public data alone &nbsp; <span class="feas feas-b">B</span> prototypable with public + synthetic data &nbsp; <span class="feas feas-c">C</span> needs future BHEL internal data &nbsp; <span class="feas feas-d">D</span> needs physical/industrial infrastructure (sensors, OT access, robotics)</li>
+          <li><strong>Value / Difficulty / Strategic importance</strong> — H(igh) / M(edium) / L(ow), judged qualitatively against BHEL's specific situation (Maharatna-status pressure, the digital-maturity gap, named competitor threats), not a generic industry rubric.</li>
+          <li><strong>Time to prototype</strong> — rough, assumes one small team using the architecture this report ultimately recommends, not full production timeline.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" id="use-cases" data-title="100+ AI Use Cases" data-status="done">
+      <div class="chapter-eyebrow">07 · Opportunities</div>
+      <h2>100+ AI Use Cases</h2>
+      <div class="table-wrap">
+        <table>
+          <caption>114 use cases across BHEL's business, grouped by function</caption>
+          <thead><tr><th>#</th><th>Use case</th><th>AI opportunity</th><th>Feas.</th><th>Value</th><th>Diff.</th><th>Prototype</th><th>Strategic</th></tr></thead>
+          <tbody>
+            <tr class="cat-row"><td colspan="8">A · Corporate / Management</td></tr>
+            <tr><td>1</td><td>Board/exec briefing generator</td><td>Weekly digest of public news + financial + regulatory signal</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>2–4wk</td><td>H</td></tr>
+            <tr><td>2</td><td>Maharatna-status risk tracker</td><td>Track BHEL's public quarterly PAT vs. the Maharatna PAT threshold</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>3</td><td>Cross-segment strategy dashboard</td><td>Unify segment order-inflow/win-rate from public disclosures</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">B · Strategy</td></tr>
+            <tr><td>4</td><td>Government policy impact simulator</td><td>Map new CEA/MNRE/CERC/PLI changes to BHEL segments</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>5</td><td>Capacity-addition tracker</td><td>Track NEP/CEA targets vs. BHEL's order pipeline</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>6</td><td>Scenario-planning assistant</td><td>What-if analysis over public market/policy data</td><td><span class="feas feas-b">B</span></td><td>M</td><td>H</td><td>8wk</td><td>M</td></tr>
+            <tr><td>7</td><td>Peer-benchmarking engine</td><td>Auto-compare BHEL vs. competitors on public financial/order metrics</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">C · R&amp;D</td></tr>
+            <tr><td>8</td><td>Patent landscape monitor</td><td>Track BHEL + competitor filings via WIPO/Espacenet/Google Patents</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>9</td><td>R&amp;D gap-analysis agent</td><td>Compare BHEL's 12 CoEs against global tech trends from Phase 2</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>10</td><td>Scientific literature radar</td><td>arXiv/IEEE/ScienceDirect monitoring for relevant emerging tech</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+            <tr><td>11</td><td>Technology-partner scout</td><td>Identify JV/licensing candidates from public partnership patterns</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">D · Engineering</td></tr>
+            <tr><td>12</td><td>Standards &amp; codes assistant</td><td>Q&amp;A over public engineering standards/codes (IS, IEC, ASME)</td><td><span class="feas feas-b">B</span></td><td>H</td><td>M</td><td>6wk</td><td>H</td></tr>
+            <tr><td>13</td><td>Failure-mode literature search</td><td>Cross-reference public incident reports for design lessons</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>14</td><td>AI-simulation advisory</td><td>Evaluate Ansys SimAI-class surrogate tools for BHEL adoption</td><td><span class="feas feas-d">D</span></td><td>H</td><td>H</td><td>advisory</td><td>H</td></tr>
+            <tr><td>15</td><td>Drawing-digitization roadmap</td><td>Advisory addressing the DigiPAM gap found in Phase 1</td><td><span class="feas feas-c">C</span></td><td>M</td><td>M</td><td>advisory</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">E · Product Design</td></tr>
+            <tr><td>16</td><td>Competitor product-teardown tracker</td><td>Track publicly announced competitor product specs/launches</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+            <tr><td>17</td><td>Design-for-manufacture benchmark</td><td>Compare BHEL specs to public competitor datasheets</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+            <tr><td>18</td><td>Customer-requirement signal mining</td><td>Mine public tenders/RFPs for emerging spec requirements</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">F · Product Development</td></tr>
+            <tr><td>19</td><td>New-product opportunity scout</td><td>Cross-reference hydrogen/BESS/SMR policy trends vs. BHEL gaps</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>20</td><td>Roadmap-vs-market alignment check</td><td>Compare BHEL's public roadmap claims to market demand signals</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>21</td><td>Export product-fit analyzer</td><td>Assess BHEL product fit for export markets via public trade data</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">G · Manufacturing</td></tr>
+            <tr><td>22</td><td>Capacity-expansion tracker</td><td>Track competitor plant expansions (e.g. Hitachi's Vadodara plant)</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+            <tr><td>23</td><td>Predictive-maintenance benchmark advisory</td><td>Benchmark BHEL plants against public PdM case studies</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+            <tr><td>24</td><td>Digital-twin readiness assessment</td><td>Advisory using public Siemens/NVIDIA architecture patterns</td><td><span class="feas feas-d">D</span></td><td>H</td><td>H</td><td>advisory</td><td>H</td></tr>
+            <tr><td>25</td><td>Smart-factory benchmark report</td><td>Compare BHEL's digital maturity vs. Dongfang/Shanghai Electric</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">H · Quality</td></tr>
+            <tr><td>26</td><td>Quality-standard compliance tracker</td><td>Monitor changes to certifications relevant to BHEL products</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>27</td><td>Defect-pattern literature mining</td><td>Cross-reference public failure/quality-incident reports</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>28</td><td>Vision-AI inspection advisory</td><td>Advisory on computer-vision QC (cf. Rockwell VisionAI, Doosan D-Vision)</td><td><span class="feas feas-d">D</span></td><td>H</td><td>H</td><td>advisory</td><td>M</td></tr>
+            <tr><td>29</td><td>Public warranty/recall pattern analysis</td><td>Mine public info on competitor warranty/recall patterns</td><td><span class="feas feas-c">C</span></td><td>L</td><td>M</td><td>—</td><td>L</td></tr>
+
+            <tr class="cat-row"><td colspan="8">I · Supply Chain</td></tr>
+            <tr><td>30</td><td>Import-dependency tracker</td><td>Track BHEL's FY26 MoU import-reduction target vs. supplier data</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+            <tr><td>31</td><td>Critical-component supplier risk monitor</td><td>Track public news on supplier disruptions (chips, forgings, castings)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>32</td><td>Alternate-supplier discovery agent</td><td>Find alternate suppliers from public directories/trade data</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>33</td><td>Raw-material price/policy tracker</td><td>Track steel/copper/rare-earth price and policy signals</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">J · Procurement</td></tr>
+            <tr><td>34</td><td>GeM compliance tracker</td><td>Track BHEL's 37% GeM-procurement target vs. disclosure trends</td><td><span class="feas feas-b">B</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>35</td><td>Vendor due-diligence agent</td><td>Auto-check prospective vendors' public litigation/compliance record</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>36</td><td>Tender-terms benchmarking</td><td>Compare BHEL's tender terms to public peer best-practice</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+
+            <tr class="cat-row"><td colspan="8">K · Project / EPC</td></tr>
+            <tr><td>37</td><td>Project delay risk-signal monitor</td><td>Mine public news for early EPC risk signals (land, clearance, funding)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>38</td><td>Competitor project tracker</td><td>Track competitor project wins/delays from public tender results</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>39</td><td>Regulatory clearance tracker</td><td>Monitor environment/forest/land clearance status for public projects</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>40</td><td>EPC benchmark cost/schedule database</td><td>Build a public benchmark of comparable project costs/schedules</td><td><span class="feas feas-c">C</span></td><td>M</td><td>H</td><td>—</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">L · Sales</td></tr>
+            <tr><td>41</td><td>Customer capex signal monitor</td><td>Track utility/industrial customer capex announcements as sales leads</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>42</td><td>Public RFP/tender early-warning</td><td>Alert sales to newly published relevant tenders, GeM/CPPP/state</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+            <tr><td>43</td><td>Win/loss public pattern analysis</td><td>Analyze public tender-result patterns for competitive drivers</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4–6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">M · Business Development</td></tr>
+            <tr><td>44</td><td>Emerging-market opportunity radar</td><td>Track MNRE/CEA/state announcements for new segments (BESS, H2, SMR)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>45</td><td>Partnership-opportunity scout</td><td>Identify JV targets from public tech/business news</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>46</td><td>Export market-entry advisory</td><td>Public trade-data-based advisory on target export geographies</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">N · Tender Intelligence — flagship category</td></tr>
+            <tr><td>47</td><td>Tender discovery &amp; aggregation agent</td><td>Continuously crawl GeM/CPPP/state/global tenders in BHEL's segments</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>48</td><td>Tender requirement extraction</td><td>Auto-extract specs/eligibility/timeline from tender PDFs</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>49</td><td>Competitive bid-pattern analysis</td><td>Infer competitor bidding patterns from historical results (cf. the L&amp;T/BHEL NTPC split found in Phase 1)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>6wk</td><td>H</td></tr>
+            <tr><td>50</td><td>Tender win-probability estimator</td><td>Score tenders on public features only (segment fit, competitor activity, past win-rate)</td><td><span class="feas feas-b">B</span></td><td>H</td><td>H</td><td>8wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">O · Contract / Legal</td></tr>
+            <tr><td>51</td><td>Public litigation/arbitration tracker</td><td>Monitor public court/arbitration records involving BHEL or rivals</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4–6wk</td><td>M</td></tr>
+            <tr><td>52</td><td>Contract-clause change tracker</td><td>Track changes in standard government contract templates/GFR rules</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>53</td><td>Contract risk-clause library</td><td>Build a public-precedent library of contract risk clauses</td><td><span class="feas feas-b">B</span></td><td>L</td><td>M</td><td>6wk</td><td>L</td></tr>
+
+            <tr class="cat-row"><td colspan="8">P · Customer Intelligence</td></tr>
+            <tr><td>54</td><td>Customer capex/strategy tracker</td><td>Track NTPC/state-utility public capex plans and priorities</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>55</td><td>Customer-sentiment public monitor</td><td>Mine public statements/news for customer sentiment toward BHEL</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+            <tr><td>56</td><td>Customer technology-adoption tracker</td><td>Track which vendors' tech customers adopt (cf. Toshiba/NTPC EtaPRO)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">Q · Service / O&amp;M</td></tr>
+            <tr><td>57</td><td>Installed-base public registry</td><td>Build a public-source registry of BHEL's known installed base from commissioning press releases</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>6wk</td><td>H</td></tr>
+            <tr><td>58</td><td>Competitor O&amp;M-product threat tracker</td><td>Monitor competitor AI/O&amp;M rollouts onto shared customer bases (EtaPRO-style)</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>59</td><td>Service-contract renewal signal monitor</td><td>Track public signals of upcoming AMC/service renewals</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+            <tr><td>60</td><td>Spare-parts demand forecast (public proxy)</td><td>Estimate demand from public installed-base age/capacity data</td><td><span class="feas feas-c">C</span></td><td>M</td><td>H</td><td>—</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">R · Knowledge Management</td></tr>
+            <tr><td>61</td><td>Public technical-document Q&amp;A</td><td>Agentic RAG over BHEL's own published technical/product documents</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>62</td><td>Retiring-workforce knowledge capture advisory</td><td>Advisory referencing ABB's Industrial Knowledge Vault pattern</td><td><span class="feas feas-d">D</span></td><td>H</td><td>H</td><td>advisory</td><td>M</td></tr>
+            <tr><td>63</td><td>Cross-BU knowledge search</td><td>Unify search across BHEL's public product/CoE/R&amp;D pages</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">S · Training</td></tr>
+            <tr><td>64</td><td>Standards-based training content generator</td><td>Auto-generate training material from public engineering standards</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+            <tr><td>65</td><td>Onboarding Q&amp;A assistant</td><td>Answer new-employee questions from BHEL's public HR/policy pages</td><td><span class="feas feas-a">A</span></td><td>L</td><td>L</td><td>2wk</td><td>L</td></tr>
+            <tr><td>66</td><td>Skill-gap market-signal tracker</td><td>Track competitor hiring for AI/digital roles via public postings</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">T · HR</td></tr>
+            <tr><td>67</td><td>Employer-brand sentiment monitor</td><td>Track public sentiment/reviews about BHEL as employer</td><td><span class="feas feas-a">A</span></td><td>L</td><td>L</td><td>2wk</td><td>L</td></tr>
+            <tr><td>68</td><td>Competitor hiring-pattern tracker</td><td>Monitor competitor job postings for strategic hiring signals</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>69</td><td>Government HR-policy compliance tracker</td><td>Track DPE/government HR policy changes affecting PSU staffing</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">U · Finance</td></tr>
+            <tr><td>70</td><td>Peer financial-benchmarking dashboard</td><td>Auto-updating ratio comparison vs. competitors from public filings</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>71</td><td>Maharatna-criteria compliance dashboard</td><td>Track BHEL's own public financials directly against the PAT threshold</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>72</td><td>Disinvestment/OFS signal tracker</td><td>Track government disinvestment announcements affecting BHEL stock</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">V · Safety</td></tr>
+            <tr><td>73</td><td>Cross-industry safety-incident tracker</td><td>Monitor public safety incidents in power/heavy industry for lessons-learned</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+            <tr><td>74</td><td>Safety-standard change tracker</td><td>Track changes to electrical/boiler/nuclear safety regulations</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>75</td><td>Safety-critical AI governance advisory</td><td>Advisory on safe AI-adjacent-to-OT architecture (this report's own §19)</td><td><span class="feas feas-b">B</span></td><td>H</td><td>M</td><td>advisory</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">W · Cybersecurity</td></tr>
+            <tr><td>76</td><td>Public OT/ICS threat-intel monitor</td><td>Track public CERT-In/ICS-CERT advisories relevant to BHEL's OT footprint</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>77</td><td>Vendor cyber-risk screening</td><td>Screen suppliers/partners for public cyber-incident history</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+            <tr><td>78</td><td>AI-system security advisory</td><td>Prompt-injection/RAG-poisoning advisory drawing on this report's governance section</td><td><span class="feas feas-b">B</span></td><td>H</td><td>M</td><td>advisory</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">X · Sustainability</td></tr>
+            <tr><td>79</td><td>ESG disclosure benchmarking</td><td>Compare BHEL's public ESG disclosures vs. peers/global norms</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>80</td><td>Carbon-policy impact tracker</td><td>Track carbon-pricing/emissions-policy changes affecting the thermal business</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>81</td><td>Green-technology funding tracker</td><td>Track public green-hydrogen/BESS incentive and funding announcements</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>2wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">Y · Energy</td></tr>
+            <tr><td>82</td><td>Grid/capacity-addition forecast tracker</td><td>Track CEA/state grid-planning public data</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>83</td><td>Renewable-integration policy tracker</td><td>Track MNRE/CERC renewable-integration rule changes</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+            <tr><td>84</td><td>Energy-storage market-sizing tracker</td><td>Track public BESS/pumped-storage project announcements</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+
+            <tr class="cat-row"><td colspan="8">Z · Export / International Business</td></tr>
+            <tr><td>85</td><td>Export-market regulatory tracker</td><td>Track import/export regulation changes in target export markets</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4–6wk</td><td>M</td></tr>
+            <tr><td>86</td><td>International tender-discovery agent</td><td>Extend the tender-intelligence agent to global (non-India) tenders</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>6wk</td><td>H</td></tr>
+            <tr><td>87</td><td>Country risk &amp; opportunity dashboard</td><td>Combine public trade/political/economic data for export geographies</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AA · Digital Twins</td></tr>
+            <tr><td>88</td><td>Digital-twin vendor landscape advisory</td><td>Compare Siemens/NVIDIA/AVEVA/Hitachi architectures for BHEL fit</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+            <tr><td>89</td><td>Public-data plant-performance proxy twin</td><td>Coarse performance model from published capacity/generation data</td><td><span class="feas feas-b">B</span></td><td>M</td><td>H</td><td>8wk+</td><td>M</td></tr>
+            <tr><td>90</td><td>Digital-twin ROI case-study library</td><td>Compile public ROI case studies as an internal-pitch resource</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AB · Physical AI</td></tr>
+            <tr><td>91</td><td>Physical-AI landscape tracker</td><td>Track NVIDIA/Omniverse-ecosystem developments for heavy manufacturing</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+            <tr><td>92</td><td>Robotics-readiness advisory</td><td>Advisory on physical-AI/robotics adoption path (this report's §5)</td><td><span class="feas feas-d">D</span></td><td>M</td><td>H</td><td>advisory</td><td>L</td></tr>
+            <tr><td>93</td><td>Autonomous-inspection vendor scan</td><td>Scan public vendor landscape for drone/robotic plant-asset inspection</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AC · Robotics</td></tr>
+            <tr><td>94</td><td>Welding/fabrication robotics benchmark</td><td>Benchmark BHEL's Advanced Fabrication CoE vs. public robotics case studies</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+            <tr><td>95</td><td>Warehouse/logistics robotics scan</td><td>Scan public case studies of robotics in heavy-component logistics</td><td><span class="feas feas-a">A</span></td><td>L</td><td>L</td><td>3wk</td><td>L</td></tr>
+            <tr><td>96</td><td>Robotics supplier landscape tracker</td><td>Track FANUC/KUKA/ABB robotics announcements relevant to BHEL</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AD · Autonomous Engineering</td></tr>
+            <tr><td>97</td><td>Generative-design adoption advisory</td><td>Advisory on Ansys/Autodesk-class tool adoption (this report's §4)</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>3wk</td><td>M</td></tr>
+            <tr><td>98</td><td>Agentic-CAD research tracker</td><td>Track the still-research-stage agentic-CAD literature for R&amp;D awareness</td><td><span class="feas feas-a">A</span></td><td>L</td><td>L</td><td>2wk</td><td>L</td></tr>
+            <tr><td>99</td><td>Engineering-change-order benchmark</td><td>Benchmark ECO cycle times against public industry case studies</td><td><span class="feas feas-c">C</span></td><td>L</td><td>M</td><td>—</td><td>L</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AE · Product Intelligence</td></tr>
+            <tr><td>100</td><td>Product-lifecycle public tracker</td><td>Track public BHEL/competitor product launch and EOL announcements</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+            <tr><td>101</td><td>Customer product-feedback mining</td><td>Mine public forums/news for product feedback signals</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>L</td></tr>
+            <tr><td>102</td><td>Product-line competitive positioning map</td><td>Auto-generate a positioning map from public spec/price data</td><td><span class="feas feas-b">B</span></td><td>M</td><td>M</td><td>6wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AF · Market Intelligence</td></tr>
+            <tr><td>103</td><td>Market-sizing continuous tracker</td><td>Auto-update TAM/SAM per segment from public market reports</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>104</td><td>Demand-signal aggregator</td><td>Aggregate CEA/MNRE/state capacity-addition announcements</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>105</td><td>Pricing-trend tracker</td><td>Track public commodity/equipment pricing trends for bid pricing</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AG · Technology Intelligence</td></tr>
+            <tr><td>106</td><td>Technology radar dashboard</td><td>Turn this report's Phase 2 findings into a continuously updated radar</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4wk</td><td>H</td></tr>
+            <tr><td>107</td><td>Vendor product-launch tracker</td><td>Track named competitor AI launches (EtaPRO, TOMONI, SmartSignal…) continuously</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>108</td><td>Open-source/research technology scout</td><td>Track arXiv/GitHub for relevant emerging techniques</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>2wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AH · Competitor Intelligence</td></tr>
+            <tr><td>109</td><td>Competitor order-win tracker</td><td>Continuously track competitor tender/order wins — prototyped this session in Phase 1</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>done</td><td>H</td></tr>
+            <tr><td>110</td><td>Competitor digital-capability tracker</td><td>Standing watchlist on competitor AI/digital product rollouts</td><td><span class="feas feas-a">A</span></td><td>H</td><td>L</td><td>3wk</td><td>H</td></tr>
+            <tr><td>111</td><td>Competitor financial-trend tracker</td><td>Track competitor quarterly results/order-book trends from public filings</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+
+            <tr class="cat-row"><td colspan="8">AI · Regulatory Intelligence</td></tr>
+            <tr><td>112</td><td>Multi-ministry regulatory change tracker</td><td>Unify tracking across Heavy Industries/Power/MNRE/Railways/Defence</td><td><span class="feas feas-a">A</span></td><td>H</td><td>M</td><td>4–6wk</td><td>H</td></tr>
+            <tr><td>113</td><td>CERC/state tariff-order tracker</td><td>Track tariff/regulatory orders affecting BHEL customers' economics</td><td><span class="feas feas-a">A</span></td><td>M</td><td>M</td><td>4wk</td><td>M</td></tr>
+            <tr><td>114</td><td>Global standards-body change tracker</td><td>Track IEC/IEEE/ASME standards revisions relevant to BHEL products</td><td><span class="feas feas-a">A</span></td><td>M</td><td>L</td><td>3wk</td><td>M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="chapter" id="public-data-opportunities" data-title="Public-Data-First Opportunities" data-status="done">
+      <div class="chapter-eyebrow">08 · Opportunities</div>
+      <h2>Public-Data-First Opportunities</h2>
+      <p class="chapter-intro">24 of the feasibility-A use cases above, each with the actual public sources and technique to build it — not an abstract claim that "public data would work."</p>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Selected public-data-first opportunities · concrete build path</caption>
+            <thead><tr><th>Use case</th><th>Public sources</th><th>Technique</th><th>Prototype</th></tr></thead>
+            <tbody>
+              <tr><td>Board/exec briefing generator</td><td>BHEL press releases, NSE/BSE filings, Ministry pages, trade press</td><td>Scheduled crawl + agentic summarization</td><td>2–4wk</td></tr>
+              <tr><td>Maharatna-status risk tracker</td><td>BHEL quarterly results (NSE/BSE), DPE Maharatna criteria</td><td>Structured extraction + threshold dashboard</td><td>4–6wk</td></tr>
+              <tr><td>Peer-benchmarking engine</td><td>Competitor + BHEL quarterly filings, annual reports</td><td>Structured financial extraction + comparison</td><td>4wk</td></tr>
+              <tr><td>Patent landscape monitor</td><td>WIPO, Espacenet, Google Patents, IP India</td><td>Scheduled patent-search crawl + entity extraction</td><td>4–6wk</td></tr>
+              <tr><td>Customer-requirement signal mining</td><td>GeM / CPPP / state tender PDFs</td><td>Tender-PDF extraction + spec-trend aggregation</td><td>4wk</td></tr>
+              <tr><td>New-product opportunity scout</td><td>MNRE/CEA/PLI policy pages, market reports</td><td>Policy-change monitor + gap analysis vs. BHEL's own pages</td><td>4–6wk</td></tr>
+              <tr><td>Import-dependency tracker</td><td>BHEL's own FY26 MoU targets, public trade/supplier signals</td><td>Structured target-vs-signal tracking</td><td>4wk</td></tr>
+              <tr><td>Critical-component supplier risk monitor</td><td>Trade press, supplier company news</td><td>News monitoring + risk entity classification</td><td>4–6wk</td></tr>
+              <tr><td>Vendor due-diligence agent</td><td>MCA filings, court records, news</td><td>Agentic search across public registries + litigation record</td><td>4–6wk</td></tr>
+              <tr><td>Project delay risk-signal monitor</td><td>News, state pollution-control-board / forest-clearance portals</td><td>News + regulatory-portal monitoring agent</td><td>4–6wk</td></tr>
+              <tr><td>Competitor project tracker</td><td>Competitor press releases, tender-result portals</td><td>Tender-result crawl + competitor entity linking</td><td>3wk</td></tr>
+              <tr><td>Customer capex signal monitor</td><td>Utility/industrial customer IR pages, capex announcements</td><td>News/IR-page monitoring agent</td><td>3wk</td></tr>
+              <tr><td>Public RFP/tender early-warning</td><td>GeM, CPPP, state e-procurement portals</td><td>Multi-portal crawler + relevance classifier</td><td>4wk</td></tr>
+              <tr><td>Emerging-market opportunity radar</td><td>MNRE/CEA/state renewable-energy announcements</td><td>Policy monitoring + opportunity scoring agent</td><td>4–6wk</td></tr>
+              <tr><td><strong>Tender discovery &amp; aggregation agent</strong></td><td>GeM, CPPP, state portals, global tender boards</td><td>Core crawler — the platform's ingestion backbone</td><td>4–6wk</td></tr>
+              <tr><td><strong>Tender requirement extraction</strong></td><td>Tender PDFs from the agent above</td><td>PDF extraction + structured-field parsing</td><td>4–6wk</td></tr>
+              <tr><td><strong>Competitive bid-pattern analysis</strong></td><td>Historical public tender-result disclosures</td><td>Agentic retrieval + pattern synthesis over the ingested tender corpus</td><td>6wk</td></tr>
+              <tr><td>Customer technology-adoption tracker</td><td>Customer press releases (e.g. NTPC–Toshiba EtaPRO)</td><td>News monitoring + vendor-relationship extraction</td><td>3wk</td></tr>
+              <tr><td>Installed-base public registry</td><td>BHEL/customer commissioning press releases</td><td>Entity extraction → structured plant/asset registry</td><td>6wk</td></tr>
+              <tr><td>Competitor O&amp;M-product threat tracker</td><td>Competitor product press releases</td><td>Product-launch monitoring, tagged to shared customers</td><td>3wk</td></tr>
+              <tr><td>Public technical-document Q&amp;A</td><td>BHEL's own published technical/product pages — <em>plus user-uploaded PDFs</em></td><td>Agentic RAG over BHEL's public corpus; upload path feeds the same pipeline</td><td>4–6wk</td></tr>
+              <tr><td>Public OT/ICS threat-intel monitor</td><td>CERT-In, ICS-CERT advisories</td><td>Advisory-feed monitoring + relevance filter to BHEL's OT footprint</td><td>4–6wk</td></tr>
+              <tr><td>Grid/capacity-addition forecast tracker</td><td>CEA National Electricity Plan, state grid-planning docs</td><td>Structured extraction from public planning documents</td><td>3wk</td></tr>
+              <tr><td>Technology radar dashboard</td><td>This report's own Phase 2 sources, kept live</td><td>Turns the report itself into a continuously-updated dashboard</td><td>4wk</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="top-20" data-title="Top 20 Opportunities" data-status="done">
+      <div class="chapter-eyebrow">09 · Opportunities</div>
+      <h2>Top 20 Opportunities</h2>
+      <p class="chapter-intro">Ranked by strategic importance and value against BHEL's specific situation — not a generic industry rubric. Provisional: the formal weighted scoring framework lands in Phase 6 and may reorder this list; four Tender Intelligence entries rank first because it's both the highest-evidence category (Phase 1 found a real BHEL/L&amp;T tender split to build on) and the segment the user's own roadmap targets first (Weeks 5–6).</p>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Provisional top 20, pending Phase 6's formal weighting</caption>
+            <thead><tr><th>#</th><th>Use case</th><th>Feas.</th><th>Why it ranks here</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Tender discovery &amp; aggregation agent</td><td><span class="feas feas-a">A</span></td><td>Ingestion backbone — everything else in this category depends on it</td></tr>
+              <tr><td>2</td><td>Tender requirement extraction</td><td><span class="feas feas-a">A</span></td><td>Turns raw tender PDFs into usable structured data</td></tr>
+              <tr><td>3</td><td>Competitive bid-pattern analysis</td><td><span class="feas feas-a">A</span></td><td>Directly exploits the BHEL/L&amp;T NTPC tender-split finding from Phase 1</td></tr>
+              <tr><td>4</td><td>Tender win-probability estimator</td><td><span class="feas feas-b">B</span></td><td>Highest-value output of the tender cluster, if the earlier three ship first</td></tr>
+              <tr><td>5</td><td>Competitor order-win tracker</td><td><span class="feas feas-a">A</span></td><td>Already prototyped this session — proof the approach works</td></tr>
+              <tr><td>6</td><td>Competitor O&amp;M-product threat tracker</td><td><span class="feas feas-a">A</span></td><td>Directly answers the Toshiba EtaPRO/NTPC threat found in Phase 1</td></tr>
+              <tr><td>7</td><td>Installed-base public registry</td><td><span class="feas feas-a">A</span></td><td>Prerequisite for the O&amp;M threat tracker and most Service/O&amp;M use cases</td></tr>
+              <tr><td>8</td><td>Public technical-document Q&amp;A</td><td><span class="feas feas-a">A</span></td><td>Doubles as the platform's core RAG capability and the user-upload path</td></tr>
+              <tr><td>9</td><td>Maharatna-status risk tracker</td><td><span class="feas feas-a">A</span></td><td>Ties AI investment directly to BHEL's own most urgent, dated pressure</td></tr>
+              <tr><td>10</td><td>Maharatna-criteria compliance dashboard</td><td><span class="feas feas-a">A</span></td><td>Same rationale — the more leadership-facing framing of #9</td></tr>
+              <tr><td>11</td><td>Peer-benchmarking engine</td><td><span class="feas feas-a">A</span></td><td>Reusable core across Strategy, Finance and Competitor Intelligence</td></tr>
+              <tr><td>12</td><td>Customer capex/strategy tracker</td><td><span class="feas feas-a">A</span></td><td>Direct sales-pipeline value, cheap to build</td></tr>
+              <tr><td>13</td><td>Customer technology-adoption tracker</td><td><span class="feas feas-a">A</span></td><td>Early-warning for the next EtaPRO-style disintermediation risk</td></tr>
+              <tr><td>14</td><td>Import-dependency tracker</td><td><span class="feas feas-a">A</span></td><td>Tracks BHEL's own government-mandated FY26 target</td></tr>
+              <tr><td>15</td><td>Critical-component supplier risk monitor</td><td><span class="feas feas-a">A</span></td><td>Supply-chain resilience, low build cost</td></tr>
+              <tr><td>16</td><td>Emerging-market opportunity radar</td><td><span class="feas feas-a">A</span></td><td>Hydrogen/BESS/SMR — segments BHEL is already publicly moving into</td></tr>
+              <tr><td>17</td><td>Public OT/ICS threat-intel monitor</td><td><span class="feas feas-a">A</span></td><td>Cheap, high-relevance given BHEL's OT/DCS footprint</td></tr>
+              <tr><td>18</td><td>Grid/capacity-addition forecast tracker</td><td><span class="feas feas-a">A</span></td><td>Directly informs BHEL's core thermal/renewables demand forecasting</td></tr>
+              <tr><td>19</td><td>Multi-ministry regulatory change tracker</td><td><span class="feas feas-a">A</span></td><td>Single source of truth across the many regulators found in Phase 1</td></tr>
+              <tr><td>20</td><td>Digital-twin vendor landscape advisory</td><td><span class="feas feas-a">A</span></td><td>Positions BHEL's next move against Siemens/NVIDIA/AVEVA/Hitachi credibly</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <section class="chapter" id="top-10" data-title="Top 10 Strategic Initiatives" data-status="done">
+      <div class="chapter-eyebrow">10 · Decision</div>
+      <h2>Top 10 Strategic Initiatives</h2>
+      <p class="chapter-intro">The Top 20 consolidated into 10 coherent, fundable initiatives — several single-row opportunities merge naturally into one platform capability.</p>
+      <div class="prose">
+        <div class="company-card">
+          <h4>1 · Tender Intelligence Platform</h4>
+          <p>Discovery + requirement extraction + bid-pattern analysis + win-probability, unified. <strong>Problem:</strong> tender response is manual; Phase 1 found BHEL and L&amp;T split an NTPC bulk-tender bundle — a pattern nobody is systematically tracking. <strong>Public prototype:</strong> yes (A/B) → <strong>internal version:</strong> calibrate win-probability against BHEL's real bid-cost data once available. <strong>Tech:</strong> crawler + PDF extraction + agentic retrieval + classifier. <strong>Timeline:</strong> 6–8wk core. <strong>Risk:</strong> portal fragility/rate-limits. <strong>Strategic value: High</strong> — matches the roadmap's own Week 5–6 focus and is the most evidence-backed category found this session.</p>
+        </div>
+        <div class="company-card">
+          <h4>2 · Competitive &amp; Installed-Base Intelligence</h4>
+          <p><strong>Problem:</strong> Toshiba is selling AI monitoring directly onto NTPC's BHEL-built fleet; BHEL has no equivalent visibility layer of its own. <strong>Public → internal:</strong> cross-reference the public installed-base registry against BHEL's real as-sold asset list for precision. <strong>Tech:</strong> news crawl + entity extraction + registry DB. <strong>Timeline:</strong> 6wk. <strong>Risk:</strong> attribution accuracy. <strong>Strategic value: High</strong> — the sharpest, most concrete threat finding in this report.</p>
+        </div>
+        <div class="company-card">
+          <h4>3 · BHEL Public Research Assistant (Q&amp;A + evidence chain)</h4>
+          <p><strong>Problem:</strong> no unified way to ask "what does BHEL publicly say/do about X" across scattered official pages, filings, and EoIs. <strong>Public → internal:</strong> extend to internal SharePoint/PLM once access is granted, same architecture. <strong>Tech:</strong> crawl + chunk + agentic retrieval + citation verification (this report's own evidence-system design). <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> hallucination/citation accuracy, directly mitigated by the evidence system. <strong>Strategic value: Highest</strong> — this is the architecture every other initiative sits on.</p>
+        </div>
+        <div class="company-card">
+          <h4>4 · Maharatna Financial &amp; Governance Dashboard</h4>
+          <p><strong>Problem:</strong> BHEL is on formal government notice over the Maharatna PAT criterion; no live public-facing tracker exists. <strong>Tech:</strong> structured filing extraction + threshold dashboard. <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> filing-format changes. <strong>Strategic value: High</strong> — the most direct, leadership-legible link between AI investment and BHEL's own most urgent, government-stated pressure.</p>
+        </div>
+        <div class="company-card">
+          <h4>5 · Peer &amp; Market Benchmarking Engine</h4>
+          <p><strong>Problem:</strong> no continuous view of BHEL vs. L&amp;T / Siemens Energy / GE Vernova on financials and orders. <strong>Tech:</strong> structured competitor-filing extraction + comparison dashboard. <strong>Timeline:</strong> 4wk. <strong>Risk:</strong> inconsistent competitor disclosure formats. <strong>Strategic value: Medium–High.</strong></p>
+        </div>
+        <div class="company-card">
+          <h4>6 · Customer Intelligence &amp; Sales Signal Platform</h4>
+          <p><strong>Problem:</strong> sales lacks systematic visibility into customer capex plans and which competitor technologies customers are adopting. <strong>Tech:</strong> IR/news monitoring + entity linking. <strong>Timeline:</strong> 3–4wk. <strong>Risk:</strong> noise/false positives. <strong>Strategic value: High</strong> — earlier, better-qualified leads at low build cost.</p>
+        </div>
+        <div class="company-card">
+          <h4>7 · Supply Chain Risk &amp; Import-Dependency Monitor</h4>
+          <p><strong>Problem:</strong> BHEL has a formal FY26 government target to cut import dependency 10% YoY, with no monitoring tool tracking it. <strong>Tech:</strong> supplier/trade-news monitoring + classification. <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> coverage gaps on niche components. <strong>Strategic value: Medium–High.</strong></p>
+        </div>
+        <div class="company-card">
+          <h4>8 · Emerging-Market Opportunity Radar (hydrogen / BESS / SMR)</h4>
+          <p><strong>Problem:</strong> BHEL is already moving into hydrogen and storage (the Hystar and thyssenkrupp nucera partnerships found in Phase 1) but has no systematic way to spot the next MNRE/CEA opening. <strong>Tech:</strong> policy monitoring + opportunity-scoring agent. <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> false positives on early-stage policy signals. <strong>Strategic value: Medium–High.</strong></p>
+        </div>
+        <div class="company-card">
+          <h4>9 · OT/Cybersecurity Threat Intelligence Monitor</h4>
+          <p><strong>Problem:</strong> BHEL's DCS/OT footprint is a real target; no dedicated public-advisory monitoring was found for it. <strong>Tech:</strong> CERT-In/ICS-CERT feed monitoring, filtered to BHEL's known OT footprint. <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> false negatives where BHEL's OT footprint isn't itself public. <strong>Strategic value: Medium–High</strong> — cheap, and the safety/security framing fits a PSU's risk posture well.</p>
+        </div>
+        <div class="company-card">
+          <h4>10 · Regulatory &amp; Grid Intelligence Tracker</h4>
+          <p><strong>Problem:</strong> BHEL's business is regulated across six-plus ministries/bodies (Heavy Industries, Power, CEA, CERC, MNRE, Railways, Defence) with no single tracking view. <strong>Tech:</strong> multi-source monitoring + classification. <strong>Timeline:</strong> 4–6wk. <strong>Risk:</strong> source fragmentation. <strong>Strategic value: Medium–High.</strong></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="mvp" data-title="Recommended MVP" data-status="done">
+      <div class="chapter-eyebrow">11 · Decision</div>
+      <h2>Recommended MVP</h2>
+      <p class="chapter-intro"><span class="tag tag-recommendation">Recommendation</span> Build <strong>Initiative 3 — the BHEL Public Research Assistant</strong> — as the MVP, with Initiative 1's tender-discovery module shipped alongside it as the first concrete vertical. Not chosen for novelty: chosen because it is the one initiative every other initiative depends on, it matches the roadmap's own Week 1–4 sequencing exactly, and it is the only MVP that can <em>demonstrate</em> its own value by answering a real strategic question live, with evidence — which is exactly what this report has been doing since Phase 1.</p>
+
+      <div class="prose">
+        <h3>Why this and not another Top-10 item</h3>
+        <ul>
+          <li><strong>Public data only:</strong> every source it needs (BHEL's own site, filings, government pages, tender portals) is already catalogued in Phases 1–3.</li>
+          <li><strong>Real value, not a toy:</strong> a leadership audience can ask "should BHEL invest in physical AI?" or "what is Toshiba doing to our NTPC relationship?" and get a cited, confidence-scored answer — not a demo query, an actually useful one.</li>
+          <li><strong>Technically achievable now:</strong> agentic retrieval + evidence chain + Claude Agent SDK, all confirmed feasible in Phases 2 and this report's own architecture decisions.</li>
+          <li><strong>Impressive without overclaiming:</strong> it can say "I cannot verify this from public sources" — which, per this report's own sourcing discipline, is more credible to a technical audience than a system that never admits uncertainty.</li>
+          <li><strong>Clear enterprise path:</strong> every subsequent roadmap week (tender, competitor, technology intelligence, research agent, opportunity engine, knowledge graph, dashboard) is this same core with a new vertical or data source layered on — not a rebuild.</li>
+          <li><strong>No internal access required:</strong> ships and proves value before any SAP/PLM/CRM integration conversation needs to happen.</li>
+        </ul>
+
+        <h3>MVP UI</h3>
+        <div class="table-wrap">
+          <table>
+            <caption>Core pages and what each shows</caption>
+            <thead><tr><th>Page</th><th>Contents</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Dashboard</strong></td><td>Live tiles: Maharatna-criteria status, open high-relevance tenders, new competitor moves this week, regulatory changes this week — the four fastest-value trackers from the Top 10</td></tr>
+              <tr><td><strong>Ask AI</strong></td><td>Single-turn Q&amp;A with inline citations, tier badges, and a visible confidence label; the fast path for a quick factual question</td></tr>
+              <tr><td><strong>Research mode</strong></td><td>Multi-step Deep Research workflow (detailed below) for open-ended strategic questions</td></tr>
+              <tr><td><strong>Sources</strong></td><td>Registry of every ingested source — crawled and user-uploaded — with tier, last-crawled date, and an upload affordance for BHEL-related PDFs</td></tr>
+              <tr><td><strong>BHEL</strong></td><td>The structured strategic-context view: segments, R&amp;D CoEs, financials, government MoU targets — Phase 1 of this report, kept live</td></tr>
+              <tr><td><strong>Tenders</strong></td><td>The Tender Intelligence module: discovered tenders, extracted requirements, bid-pattern history</td></tr>
+              <tr><td><strong>Technologies</strong></td><td>The living Technology Radar (use case #106) built from this report's Phase 2</td></tr>
+              <tr><td><strong>Competitors</strong></td><td>The Competitive Landscape view from Phase 1, kept live via the order-win and O&amp;M-threat trackers</td></tr>
+              <tr><td><strong>Markets</strong></td><td>Demand-signal and market-sizing trackers (#82, #103, #104)</td></tr>
+              <tr><td><strong>Opportunities</strong></td><td>The scored 114-item opportunity map from Phase 3, filterable by feasibility/value/category</td></tr>
+              <tr><td><strong>Timeline</strong></td><td>Chronological feed of everything the platform has ingested and flagged as notable, across all sources</td></tr>
+              <tr><td><strong>Reports</strong></td><td>Saved/exportable Deep Research outputs — this artifact itself is effectively a hand-authored example of what this page should generate</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Deep Research mode — worked example</h3>
+        <p>Walking the exact question this report itself has been answering, to show the workflow concretely rather than abstractly:</p>
+        <div class="callout">
+          <span class="callout-label">Query: "Should BHEL invest in physical AI?"</span>
+          <p>
+          <strong>1. Research plan</strong> — decompose into: what is physical AI, who's shipping it (Phase 2), what are BHEL's competitors doing with it (Phase 1), what's BHEL's own digital maturity baseline (Phase 1), what's the concrete opportunity (Phase 3).<br>
+          <strong>2. Sources searched</strong> — logged live: NVIDIA/Siemens press releases, Gartner Hype Cycle, BHEL's own EoIs, competitor product pages — each tagged with its tier.<br>
+          <strong>3. Evidence collected</strong> — the specific claims, e.g. Gartner rating core digital twins "mature mainstream" but the agentic layer newer; BHEL's own EoIs showing it still "foraying into" Industry 4.0.<br>
+          <strong>4. Analysis</strong> — cross-references evidence against BHEL's specific situation, not a generic verdict.<br>
+          <strong>5. Contradictions surfaced</strong> — e.g. vendor-claimed ROI figures (Hitachi's "60% breakdown-loss reduction") flagged as unverified alongside the claim itself, not silently dropped.<br>
+          <strong>6. BHEL relevance</strong> — explicit tie to BHEL's segments and the Maharatna-pressure context, not abstract industry commentary.<br>
+          <strong>7. Opportunities</strong> — links back to the scored opportunity map (e.g. #24, #88, #92).<br>
+          <strong>8. Risks</strong> — safety-critical-OT caution (this report's own governance section), pilot-abandonment base rates from Phase 2.<br>
+          <strong>9. Recommendation</strong> — a specific, falsifiable call, not "AI can help."<br>
+          <strong>10. Confidence + sources</strong> — every claim above traces to a listed, tiered source; anything that couldn't be verified is stated as such.</p>
+        </div>
+        <p><span class="tag tag-recommendation">Recommendation</span> This is the pattern to build once and reuse everywhere in the platform — it's the same ten-step shape whether the query is about physical AI, a specific tender, or a competitor's next move.</p>
+      </div>
+    </section>
+    <section class="chapter" id="platform-architecture" data-title="Intelligence Platform Architecture" data-status="done">
+      <div class="chapter-eyebrow">12 · Architecture</div>
+      <h2>BHEL Public Intelligence Platform Architecture</h2>
+      <p class="chapter-intro">Five layers: Frontend, API, Ingestion + Agent, Processing, Storage &amp; Retrieval. The shape was sketched during planning and holds up against everything Phases 1–4 found.</p>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Layer responsibilities</caption>
+            <thead><tr><th>Layer</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend (Next.js)</td><td>The 12 MVP pages from §11: Dashboard, Ask AI, Research mode, Sources, BHEL, Tenders, Technologies, Competitors, Markets, Opportunities, Timeline, Reports</td></tr>
+              <tr><td>API (FastAPI)</td><td>Auth, query routing, agent-orchestration entrypoints, SSE streaming for long-running Research-mode queries</td></tr>
+              <tr><td>Ingestion</td><td>Two entry points feeding the same pipeline: (a) scheduled crawler across BHEL, government, tender, competitor and patent sources; (b) manual PDF upload, tagged with a distinct "user-provided" trust tier</td></tr>
+              <tr><td>Agent</td><td>Claude Agent SDK-based research agent(s) — orchestration approach detailed below</td></tr>
+              <tr><td>Processing</td><td>Extract/OCR → chunk → embed → entity/event extraction, feeding both the vector index and the knowledge graph</td></tr>
+              <tr><td>Storage &amp; retrieval</td><td>Postgres + pgvector: documents, chunks, embeddings, KG tables, evidence chain — one database for V1, not a polyglot stack</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><span class="tag tag-recommendation">Recommendation</span> Keep this to one Postgres instance through the MVP and the Week 5-8 extensions. Splitting into a dedicated graph database, a separate search engine, and a separate vector store before there's a real performance reason is exactly the kind of premature complexity this report's own LangGraph decision (below) argues against.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="knowledge-graph" data-title="Knowledge Graph Architecture" data-status="done">
+      <div class="chapter-eyebrow">13 · Architecture</div>
+      <h2>Knowledge Graph Architecture</h2>
+      <div class="prose">
+        <h3>Entities</h3>
+        <p>BHEL, Business Unit, Product, Technology, Company (competitor/partner/supplier — one entity type with a role attribute, since Phase 1 found Hitachi Energy and Toshiba occupy more than one role simultaneously), Customer, Tender, Project, Country, Market, Patent, Research Paper, Government Policy, Regulation, Partnership, Order, R&amp;D Centre, Event.</p>
+        <h3>Relationships</h3>
+        <p class="mono" style="font-size:.85rem; line-height:2;">
+        BHEL → develops → Technology<br>
+        BHEL → manufactures → Product<br>
+        BHEL → partners_with → Company<br>
+        BHEL → bids_on → Tender<br>
+        BHEL → wins / loses → Tender<br>
+        BHEL → supplies → Customer<br>
+        Company → competes_with → BHEL<br>
+        Company → also_partners_with → BHEL <span class="tag tag-inference">Inference</span> — needed because Hitachi Energy is both, simultaneously, per Phase 1<br>
+        Technology → used_in → Product<br>
+        Government Policy → affects → Market<br>
+        Technology → creates → Opportunity<br>
+        Research Paper / Patent → describes / protects → Technology
+        </p>
+        <div class="callout">
+          <span class="callout-label">Postgres vs. Neo4j</span>
+          <p><span class="tag tag-recommendation">Recommendation</span> Postgres tables for V1, not a dedicated graph database. The entity/relationship set above is modest (roughly a dozen entity types, a dozen relationship types) and the platform's actual query patterns — "what has Company X done recently," "what tenders relate to Technology Y" — are shallow 1–2 hop lookups, not the deep variable-length graph traversals that justify Neo4j's overhead. A `entities` + `relationships` table pair (or the Apache AGE extension if Cypher-style queries become genuinely useful) keeps this in the same Postgres instance as everything else. Revisit only if the Opportunity Engine (Weeks 11–12) needs real multi-hop traversal the SQL approach can't express cleanly.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="agent-architecture" data-title="AI Agent Architecture" data-status="done">
+      <div class="chapter-eyebrow">14 · Architecture</div>
+      <h2>AI Agent Architecture</h2>
+      <div class="prose">
+        <p><span class="tag tag-recommendation">Recommendation</span> — <strong>decided during this session's planning and confirmed here: Claude Agent SDK, not LangGraph, for V1.</strong> Comparisons of the two explicitly rate the Claude Agent SDK as the stronger fit for coding/research/infrastructure-style agents (which is what this platform's research agent is), at a fraction of the code (~50 lines vs. ~400 for a comparable LangGraph agent), and it gives the same tool/loop/context-management primitives that already power Claude Code — a natural fit for a single-provider (Claude) stack built with Claude Code itself. LangGraph's own 2026 community consensus is that it earns its complexity only for workflows with genuine branching and human-approval gates; this platform's V1 doesn't have that yet. <span class="tier">T1/T4</span> sources: Claude Agent SDK vs. LangGraph comparisons, "Why I Stopped Using LangGraph" (DEV Community).</p>
+        <p><strong>Tool integration layer:</strong> MCP — now Linux-Foundation-governed via the Agentic AI Foundation (confirmed in Phase 2), with OAuth resource-server hardening as of the Nov-2025 spec. Wrap the crawler, the tender-PDF extractor, the Postgres/pgvector query layer, and the KG query layer each as an MCP tool, so the agent composes them rather than the platform hard-coding a fixed pipeline.</p>
+        <p><strong>Single agent, not a swarm, for V1:</strong> one orchestrating research agent using Claude Agent SDK's tool-use loop over the MCP tools above. Split into specialized subagents (a dedicated extraction agent, a dedicated verification agent) only once a specific step proves to need isolation — e.g. if citation verification needs a stricter, separately-tuned prompt than the main research loop. This mirrors the LangGraph decision: start simple, add structure when a concrete need appears, not in anticipation of one.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="research-agent-workflow" data-title="Research Agent Workflow" data-status="done">
+      <div class="chapter-eyebrow">15 · Architecture</div>
+      <h2>Research Agent Workflow</h2>
+      <div class="prose">
+        <p>The canonical loop — already demonstrated in the MVP's worked "physical AI" example (§11) and, in a sense, by how this report itself was produced across Phases 1–4 of this session:</p>
+        <ol>
+          <li><strong>Understand</strong> the question, decompose into sub-questions</li>
+          <li><strong>Plan</strong> which source classes to search (BHEL / government / market / competitors / research &amp; patents), per the source registry from §17</li>
+          <li><strong>Search</strong> each source class — <strong>agentic, not single-shot</strong>: retrieve, check for gaps, re-retrieve if the first pass under-covers a sub-question</li>
+          <li><strong>Identify trends</strong> and <strong>compare capabilities</strong> across what was found</li>
+          <li><strong>Identify gaps</strong> — explicitly, including "not found in public sources," the same discipline Phase 1's agents used rather than guessing</li>
+          <li><strong>Evaluate opportunities</strong> against the scoring approach from §9–10</li>
+          <li><strong>Generate recommendations</strong>, each one attached to specific evidence, not asserted freestanding</li>
+          <li><strong>Verify citations</strong> — a check that the cited passage actually supports the claim before it's shown (§17)</li>
+          <li><strong>Report uncertainty</strong> plainly rather than smoothing over it</li>
+        </ol>
+        <p><span class="tag tag-inference">Inference</span> This is deliberately the same shape as OpenAI's GDPval framing from Phase 2 — "approaching expert quality on well-scoped deliverables" — the workflow is designed to produce a defensible, well-scoped deliverable per query, not an open-ended conversation.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="data-architecture" data-title="Data Architecture" data-status="done">
+      <div class="chapter-eyebrow">16 · Architecture</div>
+      <h2>Data Architecture</h2>
+      <div class="prose">
+        <p>Web / uploaded PDF → crawler or upload endpoint → object storage (S3/MinIO, raw documents) → extraction/OCR → chunking → embeddings → entity/event extraction → knowledge graph + search index → research agent.</p>
+        <ul>
+          <li><strong>Crawling:</strong> httpx + structured parsing for static government/tender portals; Playwright for JS-heavy sites (several state e-procurement portals fell into this category during Phase 1's research). Respect robots.txt and each portal's terms; rate-limit per domain.</li>
+          <li><strong>Deduplication &amp; versioning:</strong> content-hash each document; store new versions rather than overwriting, so change-detection (a tender amendment, a policy revision) is itself a signal the platform can surface.</li>
+          <li><strong>PDF/table extraction:</strong> PyMuPDF for text-native PDFs (most BHEL/government releases); OCR fallback for scanned tender documents, which Phase 1's research suggests are still common on state portals.</li>
+          <li><strong>Metadata:</strong> source URL, source tier, crawl/upload timestamp, document type, and — critically — a freshness flag, since several Phase-1 findings (DigiPAM, the BI/analytics EoI) turned out to be years-old initiatives of unconfirmed current status.</li>
+          <li><strong>Observability:</strong> instrument with OpenTelemetry's GenAI semantic conventions (CNCF-governed, confirmed as 2026 standard practice in Phase 2) from day one, not retrofitted later.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" id="evidence-architecture" data-title="Source / Evidence Architecture" data-status="done">
+      <div class="chapter-eyebrow">17 · Architecture</div>
+      <h2>Source / Evidence Architecture</h2>
+      <div class="prose">
+        <p>Formalizes the convention this entire report has followed since Phase 1: <span class="mono">Source → Document → Passage → Claim → Evidence → Confidence</span>.</p>
+        <div class="table-wrap">
+          <table>
+            <caption>Source trust tiers</caption>
+            <thead><tr><th>Tier</th><th>Definition</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tier">T1</span></td><td>Official BHEL, government, or regulator</td></tr>
+              <tr><td><span class="tier">T2</span></td><td>Official company or customer (non-BHEL)</td></tr>
+              <tr><td><span class="tier">T3</span></td><td>Research institution / peer-reviewed</td></tr>
+              <tr><td><span class="tier">T4</span></td><td>Reputable industry publication</td></tr>
+              <tr><td><span class="tier">T5</span></td><td>News</td></tr>
+              <tr><td><span class="tier">T6</span></td><td>Other / commercial blogs / aggregators</td></tr>
+              <tr><td><strong>UP</strong></td><td>User-provided upload — not yet cross-verified against a known Tier 1–6 origin</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Citation verification:</strong> a claim is only shown with a citation once a verification pass confirms the cited passage actually supports it — not merely that the source document contains related keywords. Phase 1's own research repeatedly hit this exact failure mode in miniature (a snippet mentioning a topic without supporting the specific number attached to it) and had to flag it manually; this is that discipline built into the product instead of relying on the agent's diligence alone. When no passage supports a claim, the system states <em>"I cannot verify this from public sources"</em> rather than dropping the caveat.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="tech-stack" data-title="Technology Stack" data-status="done">
+      <div class="chapter-eyebrow">18 · Architecture</div>
+      <h2>Technology Stack</h2>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Recommended stack, with the decision already made noted</caption>
+            <thead><tr><th>Layer</th><th>Choice</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend</td><td>Next.js, TypeScript, Tailwind</td><td>Standard, dashboard-heavy fit for the MVP UI in §11</td></tr>
+              <tr><td>Backend</td><td>FastAPI</td><td>—</td></tr>
+              <tr><td>Database</td><td>PostgreSQL + pgvector</td><td><strong>Decided</strong> — avoids adding pgvector as a painful later migration</td></tr>
+              <tr><td>Search</td><td>Postgres full-text/pg_trgm + pgvector, agentic retrieval on top</td><td><strong>Decided</strong> — agentic retrieval, not single-shot RAG (Phase 2 finding)</td></tr>
+              <tr><td>Graph</td><td>Postgres tables (Apache AGE if needed later)</td><td><strong>Decided</strong> — not Neo4j at V1, see §13</td></tr>
+              <tr><td>Agent framework</td><td>Claude Agent SDK</td><td><strong>Decided</strong> — not LangGraph at V1, see §14</td></tr>
+              <tr><td>Tool integration</td><td>MCP</td><td>Linux-Foundation-governed, OAuth-hardened (Phase 2)</td></tr>
+              <tr><td>Crawler</td><td>httpx (static) + Playwright (JS-heavy portals)</td><td>—</td></tr>
+              <tr><td>Document processing</td><td>PyMuPDF + OCR fallback</td><td>—</td></tr>
+              <tr><td>Storage (raw docs)</td><td>S3 / MinIO</td><td>—</td></tr>
+              <tr><td>Observability</td><td>OpenTelemetry GenAI conventions + Langfuse</td><td>Confirmed 2026 standard practice (Phase 2)</td></tr>
+              <tr><td>Deployment</td><td>Docker, per the Week 1 architecture plan already drafted this session</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <section class="chapter" id="security-architecture" data-title="Security Architecture" data-status="done">
+      <div class="chapter-eyebrow">19 · Governance</div>
+      <h2>Security Architecture</h2>
+      <div class="prose">
+        <div class="callout">
+          <span class="callout-label">The load-bearing safety principle</span>
+          <p>AI must never directly control a PLC, DCS, turbine, boiler, generator, train, grid, or safety system without deterministic validation and human authorization in between: <span class="mono" style="font-size:.82rem;">AI reasoning → deterministic validation → simulation → safety constraints → human authorization → execution</span>. <span class="tag tag-recommendation">Recommendation</span> This platform's V1 sidesteps the whole question by design, not by discipline alone: it has <strong>zero OT/PLC/DCS touchpoints</strong> — it is a research/intelligence system reading public documents, not a control system. Worth stating explicitly in any pitch to BHEL leadership, since it pre-empts the safety objection before it's raised.</p>
+        </div>
+        <ul>
+          <li><strong>Prompt injection:</strong> every crawled page and uploaded PDF is untrusted <em>data</em>, never treated as an instruction to the agent — the same discipline this report's own research agents were held to throughout Phases 1–5.</li>
+          <li><strong>RAG/context poisoning:</strong> mitigated structurally by the source-tier trust weighting and citation-verification pass already designed in §17, not bolted on separately.</li>
+          <li><strong>MCP hardening:</strong> OAuth Resource Server pattern with Resource Indicators (RFC 8707), per the Nov-2025 MCP spec confirmed in Phase 2.</li>
+          <li><strong>RBAC:</strong> tender bid-strategy views and internal-facing pages (once internal data joins in later phases) need tighter access control than the general research/Q&amp;A surface.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" id="ai-governance" data-title="AI Governance" data-status="done">
+      <div class="chapter-eyebrow">20 · Governance</div>
+      <h2>AI Governance</h2>
+      <div class="prose">
+        <ul>
+          <li><strong>Human-in-the-loop by default:</strong> mirror Emerson's Ovation AI Agents pattern from Phase 2 — the platform recommends, a person approves, for anything tagged <span class="tag tag-recommendation">Recommendation</span>. FACT/INFERENCE-tagged output can be surfaced directly since it's citation-backed.</li>
+          <li><strong>Model governance:</strong> pin model versions per deployment; run the hybrid evaluation pattern confirmed as 2026 standard practice in Phase 2 — metric checks + LLM-as-judge, validated against 200–500 human-annotated cases, human review on the flagged tail — before any model swap ships.</li>
+          <li><strong>Audit trail:</strong> every Research-mode answer persists its full source list and verification-pass result — this is what the "Reports" page in the MVP UI (§11) actually is.</li>
+          <li><strong>Data governance:</strong> the source registry (§17) with tier + freshness flag <em>is</em> the data-governance layer — it already surfaced real staleness risk in Phase 1 (the multi-year-old DigiPAM/BI-analytics EoIs).</li>
+          <li><strong>Incident handling:</strong> any verification failure or post-hoc-caught hallucination gets logged and escalated, not silently corrected — consistent with the "state uncertainty plainly" principle this whole report has followed.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" id="roadmap-12-week" data-title="12-Week Development Roadmap" data-status="done">
+      <div class="chapter-eyebrow">21 · Delivery</div>
+      <h2>12-Week Development Roadmap</h2>
+      <p class="chapter-intro">The user's own draft roadmap holds up well against everything found in Phases 1–5 — two refinements below, both driven by architecture decisions made this session, not a wholesale redesign.</p>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <caption>Revised roadmap — changes from the original draft in <em>italics</em></caption>
+            <thead><tr><th>Week</th><th>Focus</th><th>Change from original draft</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Architecture, repo, Docker, PostgreSQL, Next.js, FastAPI, basic UI</td><td>None — detailed plan already drafted this session</td></tr>
+              <tr><td>2</td><td>BHEL crawler, document storage, source registry, PDF processing</td><td>None</td></tr>
+              <tr><td>3</td><td>Chunking, embeddings, hybrid search, citation system</td><td><em>Seed the entity/relationship tables during ingestion here, not deferred to Week 10 — see §13</em></td></tr>
+              <tr><td>4</td><td>BHEL Q&amp;A, evidence verification, research UI</td><td><em>Build the core agentic-retrieval loop here, not a static RAG chatbot — this is the MVP (§11), so it should already be the full plan → search → validate → cite loop</em></td></tr>
+              <tr><td>5–6</td><td>Tender intelligence</td><td>None — matches the Top-10's #1 initiative directly</td></tr>
+              <tr><td>7–8</td><td>Competitor intelligence, technology intelligence</td><td>None — matches Top-10 #2 and the technology-radar use case</td></tr>
+              <tr><td>9–10</td><td>Research Agent</td><td><em>Reframed: this generalizes Week 4's loop into the full 9-step Deep Research workflow (§15) across all source classes, rather than introducing agentic behavior for the first time</em></td></tr>
+              <tr><td>11–12</td><td>Opportunity Engine, Knowledge Graph, executive dashboard</td><td><em>Lighter lift than originally scoped — the KG is mostly built incrementally since Week 3; Weeks 11–12 mainly add graph-aware querying/UI, not the graph itself</em></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="claude-code-plan" data-title="Claude Code Development Plan" data-status="done">
+      <div class="chapter-eyebrow">22 · Delivery</div>
+      <h2>Claude Code Development Plan</h2>
+      <div class="prose">
+        <p><strong>Week 1</strong> already has a full, concrete plan from this session: <span class="mono" style="font-size:.82rem;">apps/web</span> (Next.js/TS/Tailwind), <span class="mono" style="font-size:.82rem;">apps/api</span> (FastAPI/SQLAlchemy/uv), <span class="mono" style="font-size:.82rem;">pgvector/pgvector:pg16</span> via Docker Compose, an Alembic migration enabling the <span class="mono" style="font-size:.82rem;">vector</span> and <span class="mono" style="font-size:.82rem;">pg_trgm</span> extensions, a <span class="mono" style="font-size:.82rem;">/health</span> and <span class="mono" style="font-size:.82rem;">/api/status</span> endpoint, and a landing page StatusCard proving the full stack end-to-end — verification steps and acceptance criteria fully specified. Available on request as a standalone execution plan.</p>
+        <div class="table-wrap">
+          <table>
+            <caption>Weeks 2–12, objective and acceptance criteria</caption>
+            <thead><tr><th>Week</th><th>Objective</th><th>Acceptance criteria</th></tr></thead>
+            <tbody>
+              <tr><td>2</td><td>Crawler + source registry + PDF pipeline</td><td>Crawls ≥3 real source classes (BHEL, one government portal, one tender portal); PDFs land in object storage with metadata</td></tr>
+              <tr><td>3</td><td>Chunking, embeddings, hybrid search, citations, KG seeding</td><td>A query returns ranked chunks with working source links; entity extraction populates the KG tables</td></tr>
+              <tr><td>4</td><td>MVP: agentic Q&amp;A + evidence verification + Research mode UI</td><td>The "should BHEL invest in physical AI?" query type (§11) runs end-to-end with citations and a confidence label</td></tr>
+              <tr><td>5–6</td><td>Tender Intelligence Platform</td><td>Tender discovery, extraction, and the bid-pattern view are live on the Tenders page</td></tr>
+              <tr><td>7–8</td><td>Competitor + Technology Intelligence</td><td>Competitors and Technologies pages populated and auto-refreshing from the trackers built in §10</td></tr>
+              <tr><td>9–10</td><td>Full Research Agent</td><td>The 9-step workflow (§15) runs across all source classes, not just BHEL's own corpus</td></tr>
+              <tr><td>11–12</td><td>Opportunity Engine, KG UI, Executive Dashboard</td><td>Dashboard tiles from §11 are live; Opportunities page reflects the scored use-case map from §7–9</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="roi-framework" data-title="Business Value / ROI Framework" data-status="done">
+      <div class="chapter-eyebrow">23 · Decision</div>
+      <h2>Business Value / ROI Framework</h2>
+      <div class="prose">
+        <p>Weighted score: <span class="mono">2×(Business Impact) + 2×(Strategic Importance) + (Scalability) − (Difficulty) − (Regulatory Risk) − (Safety Risk)</span>, each term H=3/M=2/L=1. Applied to the Top 10 as a sanity check against the earlier qualitative ranking:</p>
+        <div class="table-wrap">
+          <table>
+            <caption>Top 10, scored</caption>
+            <thead><tr><th>Initiative</th><th>Score</th><th>Holds vs. §10 ranking?</th></tr></thead>
+            <tbody>
+              <tr><td>BHEL Public Research Assistant</td><td class="num">13</td><td>Yes — still #1 by value, matches §11's MVP choice</td></tr>
+              <tr><td>Tender Intelligence Platform</td><td class="num">12</td><td>Yes</td></tr>
+              <tr><td>Competitive &amp; Installed-Base Intelligence</td><td class="num">12</td><td>Yes</td></tr>
+              <tr><td>Maharatna Financial &amp; Governance Dashboard</td><td class="num">11</td><td>Yes</td></tr>
+              <tr><td>Customer Intelligence &amp; Sales Signal Platform</td><td class="num">10</td><td>Yes</td></tr>
+              <tr><td>Peer &amp; Market Benchmarking Engine</td><td class="num">9</td><td>Yes</td></tr>
+              <tr><td>Supply Chain Risk Monitor</td><td class="num">9</td><td>Yes</td></tr>
+              <tr><td>Emerging-Market Opportunity Radar</td><td class="num">9</td><td>Yes</td></tr>
+              <tr><td>Regulatory &amp; Grid Intelligence Tracker</td><td class="num">8</td><td>Yes</td></tr>
+              <tr><td>OT/Cybersecurity Threat Intelligence Monitor</td><td class="num">8</td><td>Ties with #9 — regulatory framing nudges it up slightly here</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><span class="tag tag-inference">Inference</span> The formal weighting reproduces the qualitative Top-10 ordering from §10 almost exactly — a reasonable sign the earlier ranking wasn't just narrative preference.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="build-buy-partner" data-title="Build vs Buy vs Partner" data-status="done">
+      <div class="chapter-eyebrow">24 · Decision</div>
+      <h2>Build vs Buy vs Partner</h2>
+      <div class="prose">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Component</th><th>Call</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Agent orchestration</td><td><strong>Build</strong> (on Claude Agent SDK)</td><td>Core differentiator; SDK is a foundation, not an off-the-shelf product</td></tr>
+              <tr><td>Crawler / ingestion</td><td><strong>Build</strong></td><td>BHEL-specific source list; no vendor covers this out of the box</td></tr>
+              <tr><td>Vector/hybrid search</td><td><strong>Build</strong> (on pgvector)</td><td>Modest scale for V1; a managed search product is unneeded cost/complexity</td></tr>
+              <tr><td>Knowledge graph</td><td><strong>Build</strong> (Postgres tables)</td><td>Per §13 — Neo4j is buy-side over-engineering at this scale</td></tr>
+              <tr><td>Physics simulation / digital twin</td><td><strong>Partner</strong></td><td>Per Phase 2's structural finding — even Dassault, AVEVA, ABB and Siemens partner with NVIDIA rather than build their own physics substrate; BHEL shouldn't try to out-build all four</td></tr>
+              <tr><td>Observability</td><td><strong>Buy/adopt</strong> (Langfuse, open-source)</td><td>Confirmed 2026 standard practice; building this in-house is pure waste</td></tr>
+              <tr><td>Time-series forecasting (future, internal-data phase)</td><td><strong>Buy/adopt</strong> (Chronos-2 or similar)</td><td>Real, zero-shot-capable foundation models exist; no reason to train from scratch</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="risks" data-title="Risks and Failure Modes" data-status="done">
+      <div class="chapter-eyebrow">25 · Critique</div>
+      <h2>Risks and Failure Modes</h2>
+      <div class="prose">
+        <ul>
+          <li><strong>Portal fragility:</strong> GeM/CPPP/state e-procurement sites change layout without notice; the crawler layer needs monitoring, not "set and forget."</li>
+          <li><strong>Hallucination surviving the evidence system:</strong> citation verification catches unsupported claims, not subtly-wrong-but-plausible ones; budget for periodic human spot-checks even after the system ships.</li>
+          <li><strong>Pilot abandonment:</strong> Phase 2 found ~46% pilot-abandonment rates cited for industrial AI agent systems generally — a sober base rate to plan against, not a reason not to try.</li>
+          <li><strong>Credibility skepticism from inside BHEL:</strong> a system built entirely from outside, on public data, asking a PSU to trust its analysis is a real adoption barrier — the evidence/citation system (§17) is the direct answer to this, not an afterthought.</li>
+          <li><strong>Regulatory drift:</strong> EU-AI-Act-style high-risk classification for agentic systems (Phase 2) is spreading; design the audit trail (§20) now rather than retrofit under a future Indian equivalent.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="chapter" id="what-not-to-build" data-title="What NOT to Build" data-status="done">
+      <div class="chapter-eyebrow">26 · Critique</div>
+      <h2>What NOT to Build</h2>
+      <div class="prose">
+        <ul>
+          <li><strong>Fully autonomous agentic CAD generation.</strong> Phase 2 found this is arXiv-stage research, not a shippable product — track it (use case #98), don't build it.</li>
+          <li><strong>A proprietary physics-simulation/digital-twin engine.</strong> The Build vs. Buy call above already says partner — building one in-house would mean out-engineering Siemens, NVIDIA, AVEVA and Dassault simultaneously.</li>
+          <li><strong>A multi-agent swarm at V1.</strong> The Agent Architecture decision (§14) is explicit: one orchestrating agent until a specific need for isolation appears. Building five specialized agents up front is exactly the "agent-washing"-adjacent over-engineering Gartner flagged in Phase 2.</li>
+          <li><strong>A dedicated graph database.</strong> Postgres tables suffice at this entity/relationship scale (§13); Neo4j is solving a problem this platform doesn't have yet.</li>
+          <li><strong>Any AI touching OT/PLC/DCS/turbine control without the full deterministic-validation chain from §19.</strong> Not a sequencing note — a hard line.</li>
+          <li><strong>A general-purpose chatbot with no citation/evidence system.</strong> For a PSU already under public Maharatna-status scrutiny, an unverified-answer failure mode is actively worse than not having the tool at all.</li>
+        </ul>
+      </div>
+    </section>
+    <section class="chapter" id="evolution-3yr" data-title="3-Year Evolution Roadmap" data-status="done">
+      <div class="chapter-eyebrow">27 · Vision</div>
+      <h2>3-Year Evolution Roadmap</h2>
+      <div class="prose">
+        <p>The same architecture evolves through six data phases — public → internal documents → enterprise systems → industrial/OT data → digital twins → physical AI — without a rebuild, because §12's layering already separates ingestion, processing, and storage from what feeds them.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Year</th><th>What's added</th><th>What changes architecturally</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>This report's 12-week MVP, extended to all Top-10 initiatives; pilot internal-document access with one business unit</td><td>New source tier ("internal-verified") added to the evidence system; no other change</td></tr>
+              <tr><td>2</td><td>Enterprise systems — SAP/PLM/CRM via MCP tools wrapping internal APIs</td><td>Feasibility-C use cases from §7 become buildable; tender win-probability calibrates against real bid-cost data</td></tr>
+              <tr><td>3</td><td>First industrial/OT data pilot (one plant, RMDS-integrated), under the full deterministic-validation chain from §19</td><td>Digital-twin readiness (#24) moves from advisory to build, with a partner per §24</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter" id="vision-5yr" data-title="5-Year Vision" data-status="done">
+      <div class="chapter-eyebrow">28 · Vision</div>
+      <h2>5-Year Vision</h2>
+      <div class="prose">
+        <p>A closed-loop intelligence platform spanning public, internal, enterprise, and industrial data: a real digital-twin layer for BHEL's top plants (partner-built, per §24), an Opportunity Engine calibrated on actual win/loss and financial outcomes rather than public proxies, and a physical-AI layer (autonomous inspection) at one or two pilot sites — still governed by the same deterministic-safety chain from §19, not loosened as the system matures.</p>
+        <p><span class="tag tag-recommendation">Recommendation</span> The real prize isn't parity with Toshiba's EtaPRO. It's that BHEL's version, five years out, would be built on something no external vendor has: 60+ years of installed-base history and 12 CoEs' worth of engineering depth. Toshiba can sell AI on top of BHEL's hardware; it can't sell AI built on BHEL's own institutional knowledge. That gap is BHEL's actual moat, and this platform's five-year job is to make that knowledge queryable in the first place.</p>
+      </div>
+    </section>
+
+    <section class="chapter" id="final-recommendation" data-title="Final Strategic Recommendation" data-status="done">
+      <div class="chapter-eyebrow">29 · Vision</div>
+      <h2>Final Strategic Recommendation</h2>
+      <div class="prose">
+        <h3>What am I missing — 22 things this report didn't adequately cover</h3>
+        <ol>
+          <li>No named internal champion/owner is proposed — without one, a self-initiated pilot dies in committee at a PSU, however good the technical case.</li>
+          <li>Government e-procurement portals routinely block scrapers with CAPTCHAs — the crawler-dependent architecture assumes access this report never actually tested against.</li>
+          <li>Portal Terms of Use for GeM/CPPP/state sites were never reviewed — "robots.txt compliance" is not the same as confirming bulk automated access is permitted.</li>
+          <li>Regional-language coverage is a real gap — many state tender portals and DPE circulars are Hindi/regional-language only; this report's sourcing was English-only throughout.</li>
+          <li>As a PSU, BHEL's own procurement (GFR, CVC guidelines) would govern acquiring or building this system — a genuine chicken-and-egg constraint not addressed.</li>
+          <li>No specific internal persona/BU was pinned to each MVP page — "leadership" is doing a lot of unexamined work as an audience.</li>
+          <li>Competitors could build the same public-data monitoring approach on BHEL — this isn't a defensible moat by itself, only the execution and the CoE-knowledge layer described in §28 is.</li>
+          <li>Tender bid-pattern analysis could raise vigilance/anti-collusion optics internally if not scoped very explicitly as defensive/informational only — not addressed.</li>
+          <li>Long-term crawler maintenance (portal-break-fixes) has a real, ongoing headcount cost this report never modeled.</li>
+          <li>No LLM cost model was built — agentic retrieval's iterative re-retrieval is more expensive per query than single-shot RAG, and that adds up at scale.</li>
+          <li>Single-provider (Claude) architecture is a real vendor-dependency choice with no fallback model discussed.</li>
+          <li>Redistributing/summarizing copyrighted news or analyst content carries real IP exposure this report didn't examine.</li>
+          <li>No success metrics/KPIs were proposed beyond qualitative value — "is this working" needs a number.</li>
+          <li>Change management inside a traditional engineering PSU culture is unaddressed — the harder problem is usually adoption, not architecture.</li>
+          <li>This report is itself a demonstration of exactly the MVP it recommends — worth naming explicitly rather than leaving implicit.</li>
+          <li>There's a structural blind spot this report cannot see past: whatever BHEL may already be doing internally and non-publicly on digital/AI.</li>
+          <li>Government data-localization/empanelled-cloud requirements (MeitY) likely constrain the tech-stack's cloud choices — not checked against §18.</li>
+          <li>An AI-authored report about where to apply AI has an obvious self-referential bias risk — every problem can start looking like an AI-shaped nail. Flagged, not fully corrected for.</li>
+          <li>No red-team/adversarial test plan exists yet for the citation-verification system before it's trusted in front of leadership.</li>
+          <li>PSU leadership/board turnover is a real continuity risk for a self-initiated pilot with no formal budget line.</li>
+          <li>BHEL's actual cloud/IT policy and approved-vendor list would gate every choice in §18 and wasn't available to check against.</li>
+          <li>The evidence system defines source tiers (§17) but not an explicit rule for what happens when two same-tier sources conflict — a real gap to close before Phase 6's Week 4 ships.</li>
+        </ol>
+
+        <h3>If I were BHEL's CTO/CIO/R&amp;D head in 2026 — what I'd actually fund</h3>
+        <div class="callout">
+          <span class="callout-label">Brutally honest</span>
+          <p>I'd fund the MVP — the Public Research Assistant plus Tender Intelligence — as a small, cheap, 12-week pilot. Not because it's the most exciting idea in this report; digital twins and physical AI are more exciting and get better press. I'd fund it because it's the only initiative that needs zero internal-data political capital, can be killed cheaply if it doesn't work, and directly serves the one pressure BHEL is under right now that's dated and government-stated: the Maharatna PAT scrutiny from §2. It also builds the trust muscle — a working, honest, "I cannot verify this" evidence system — that any higher-stakes AI initiative will need before it gets anywhere near board approval.</p>
+          <p>I would <strong>not</strong> fund a digital-twin or physical-AI build in 2026. Partner for that, per §24, and spend the saved money on the cheaper platform that earns trust first. I'd also be skeptical of any proposal that reaches for a multi-agent architecture or a dedicated graph database on day one — that's sophistication BHEL's own public digital-maturity signal (still mostly EoIs seeking a partner, per §3) doesn't support yet. And I'd insist this reports to Corporate Strategy, not IT — Tender Intelligence is the fastest, most visible win, and it should sit with the people who feel that win first.</p>
+        </div>
+      </div>
+    </section>
+
+    </div>
+
+    <footer class="report-foot">
+      Independent research compiled from public sources only. No BHEL internal systems, data, or personnel were consulted. Every factual claim below is sourced and tiered; see the evidence-tier key in each section.
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var items = Array.prototype.slice.call(document.querySelectorAll('section.chapter'));
+  var tocList = document.getElementById('toc-list');
+  items.forEach(function(sec){
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + sec.id;
+    a.textContent = sec.dataset.title || sec.id;
+    var dot = document.createElement('span');
+    dot.className = 'status-dot';
+    dot.dataset.status = sec.dataset.status || 'todo';
+    a.appendChild(dot);
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+  var links = Array.prototype.slice.call(tocList.querySelectorAll('a'));
+  if('IntersectionObserver' in window){
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          var match = tocList.querySelector('a[href="#' + e.target.id + '"]');
+          if(match) match.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    items.forEach(function(sec){ obs.observe(sec); });
+  }
+})();
+</script>
