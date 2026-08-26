@@ -9,6 +9,8 @@ from app.core.db import AsyncSessionLocal
 from app.core.seed import (
     seed_competitor_sources,
     seed_entities,
+    seed_gem_tenders,
+    seed_government_sources,
     seed_opportunities,
     seed_sources,
 )
@@ -33,6 +35,8 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await seed_sources(db)
         await seed_competitor_sources(db)
+        await seed_government_sources(db)
+        await seed_gem_tenders(db)
         await seed_entities(db)
         await seed_opportunities(db)
     yield

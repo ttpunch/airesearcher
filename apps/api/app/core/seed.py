@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.entity import Entity, Relationship
 from app.models.opportunity import Opportunity
 from app.models.source import Source
+from app.models.tender import Tender
 
 BHEL_SEED_SOURCES: list[dict[str, str]] = [
     {
@@ -327,6 +328,90 @@ async def seed_opportunities(db: AsyncSession) -> int:
         if result.scalar_one_or_none() is not None:
             continue
         db.add(Opportunity(feasibility="A", status="proposed", **entry))
+        inserted += 1
+    if inserted:
+        await db.commit()
+    return inserted
+
+
+# GeM (Government e-Marketplace, gem.gov.in) is India's central government
+# procurement portal — BHEL, as a Maharatna PSU, posts tenders there
+# (confirmed via web search: real BHEL pages on bhel.com link out to real
+# GeM bid numbers like GEM/2023/B/3489664, and bidplus.gem.gov.in hosts
+# real BHEL bid documents). Both gem.gov.in and bidplus.gem.gov.in are
+# blocked by this project's dev sandbox's own network egress proxy, so
+# their content could not be directly fetched/verified here — only
+# confirmed to be real via search-engine-indexed snippets, not by loading
+# the pages. No automated crawler was built against GeM: its bid-search
+# is a dynamic, session-based interface (not a static page a simple
+# robots-respecting GET crawler can meaningfully scrape), and building
+# scraping logic against a page structure never actually seen would
+# violate this project's "verify, don't fabricate" discipline. The manual
+# POST /api/tenders / PDF-upload path remains how more real GeM tenders
+# get added.
+GOVERNMENT_SEED_SOURCES: list[dict[str, str]] = [
+    {
+        "name": "GeM — Government e-Marketplace",
+        "url": "https://gem.gov.in/",
+        "source_type": "tender_portal",
+        "tier": "T1",
+    },
+]
+
+
+async def seed_government_sources(db: AsyncSession) -> int:
+    """Returns the number of new sources inserted."""
+    inserted = 0
+    for entry in GOVERNMENT_SEED_SOURCES:
+        result = await db.execute(select(Source).where(Source.url == entry["url"]))
+        if result.scalar_one_or_none() is not None:
+            continue
+        db.add(Source(**entry))
+        inserted += 1
+    if inserted:
+        await db.commit()
+    return inserted
+
+
+# Two real GeM bid numbers for BHEL, found via web search this session on
+# BHEL's own site (not guessed): the title is the actual BHEL page title
+# text, the tender_ref is the real GeM bid number, and the url is the real
+# bhel.com announcement page. published_date/closing_date/estimated_value
+# are deliberately left null — bhel.com itself is also blocked by this
+# sandbox's egress proxy, so those specific fields were never verifiable
+# here, and this project doesn't fill an unverified field with a guess.
+GEM_SEED_TENDERS: list[dict[str, str]] = [
+    {
+        "title": "Custom Bid / open tender through GeM portal [GEM/2022/B/2650225]",
+        "tender_ref": "GEM/2022/B/2650225",
+        "organization": "BHEL",
+        "url": "https://bhel.com/custom-bid-open-tender-through-gem-portal-gem2022b2650225",
+    },
+    {
+        "title": "Open Tender through GeM Portal for Procurement of Check Valve, Gate Valve and Regulating Globe Valve [GEM/2023/B/3489664]",
+        "tender_ref": "GEM/2023/B/3489664",
+        "organization": "BHEL",
+        "url": "https://www.bhel.com/open-tender-through-gem-portal-gem-bid-no-gem2023b3489664-procurement-check-valve-gate-valve-and",
+    },
+]
+
+
+async def seed_gem_tenders(db: AsyncSession) -> int:
+    """Assumes seed_government_sources() has already run (in this session
+    or a prior one) — looks up the GeM source by url rather than
+    re-creating it. Idempotent by tender_ref; returns the number inserted.
+    """
+    result = await db.execute(select(Source).where(Source.url == GOVERNMENT_SEED_SOURCES[0]["url"]))
+    gem_source = result.scalar_one_or_none()
+    if gem_source is None:
+        return 0
+
+    inserted = 0
+    for entry in GEM_SEED_TENDERS:
+        result = await db.execute(select(Tender).where(Tender.tender_ref == entry["tender_ref"]))
+        if result.scalar_one_or_none() is not None:
+            continue
+        db.add(Tender(source_id=gem_source.id, status="unknown", **entry))
         inserted += 1
     if inserted:
         await db.commit()

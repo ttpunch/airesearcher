@@ -67,6 +67,8 @@ GET  /api/tenders/analyze                           # counts by status and organ
 
 Extraction is regex-based, not an LLM call — a field only appears if it was actually found in the document text (closing date, EMD amount, tender ref, eligibility-clause sentences). Browse it at http://localhost:3000/tenders.
 
+Also seeded on startup: `https://gem.gov.in/` (Government e-Marketplace, India's central procurement portal) as a T1 tender-portal source, plus two real BHEL bid records found there (`GEM/2022/B/2650225`, `GEM/2023/B/3489664`) — title/ref/url are real, closing date and value are left null since they weren't independently verifiable. GeM isn't auto-crawled (its bid search is a dynamic, session-based page, not something the simple GET-based crawler can meaningfully scrape) — add more via `POST /api/tenders` or PDF upload.
+
 ## Knowledge graph: competitors and technologies
 
 ```
