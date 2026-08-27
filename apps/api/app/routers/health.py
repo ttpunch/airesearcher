@@ -22,6 +22,6 @@ async def status(db: AsyncSession = Depends(get_db)) -> StatusResponse:
     try:
         await db.execute(text("SELECT 1"))
         db_status = "ok"
-    except Exception:
+    except Exception:  # noqa: BLE001 — any DB failure here should degrade to "error", not 500
         db_status = "error"
     return StatusResponse(api="ok", db=db_status, timestamp=datetime.now(UTC).isoformat())
