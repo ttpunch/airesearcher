@@ -18,12 +18,9 @@ const COUNT_LABELS: [keyof DashboardSummary["counts"], string, string][] = [
 
 function StatTile({ label, value, href }: { label: string; value: number; href: string }) {
   return (
-    <Link
-      href={href}
-      className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
-    >
-      <span className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{value}</span>
-      <span className="text-xs text-zinc-500 dark:text-zinc-500">{label}</span>
+    <Link href={href} className="flex flex-col gap-1.5 rounded-md border border-line bg-surface p-4.5">
+      <span className="font-mono text-[28px] leading-none font-semibold text-ink">{value}</span>
+      <span className="text-[11.5px] font-medium tracking-wide text-ink-faint uppercase">{label}</span>
     </Link>
   );
 }
@@ -39,31 +36,25 @@ export function DashboardPanel() {
       );
   }, []);
 
-  if (state.kind === "loading") return <p className="text-sm text-zinc-500">Loading…</p>;
+  if (state.kind === "loading") return <p className="text-sm text-ink-muted">Loading…</p>;
   if (state.kind === "error") {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {state.message}
-      </div>
-    );
+    return <div className="rounded-md border border-err/35 bg-err/10 p-4 text-sm text-err">{state.message}</div>;
   }
 
   const { counts, top_opportunities } = state.summary;
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {COUNT_LABELS.map(([key, label, href]) => (
           <StatTile key={key} label={label} value={counts[key]} href={href} />
         ))}
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex max-w-xl flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
-            Top opportunities
-          </h2>
-          <Link href="/opportunities" className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
+          <h2 className="font-mono text-[11px] tracking-wide text-ink-faint uppercase">Top opportunities</h2>
+          <Link href="/opportunities" className="text-xs text-ink-muted hover:text-ink">
             View all →
           </Link>
         </div>
@@ -71,10 +62,10 @@ export function DashboardPanel() {
           {top_opportunities.map((opp) => (
             <li
               key={opp.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+              className="flex items-center justify-between gap-2 rounded-md border border-line bg-surface px-4 py-3 text-sm"
             >
-              <span className="text-zinc-900 dark:text-zinc-100">{opp.title}</span>
-              <span className="text-xs text-zinc-500">score {opp.weighted_score}</span>
+              <span className="font-medium text-ink">{opp.title}</span>
+              <span className="font-mono text-xs text-accent">{opp.weighted_score}</span>
             </li>
           ))}
         </ul>
