@@ -144,6 +144,19 @@ export function IconClose(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconBolt(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" {...props}>
+      <path
+        d="M11 2 4 11.5h4.5L9 18l6.5-9.5H11L11 2Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconCheck(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 20 20" fill="none" {...props}>

@@ -211,3 +211,28 @@ export type DashboardSummary = {
 export function fetchDashboardSummary(): Promise<DashboardSummary> {
   return getJson<DashboardSummary>("/api/dashboard/summary");
 }
+
+export type NppSectorCapacity = {
+  sector_name: string;
+  installed_capacity_mw: number | null;
+};
+
+export type NppCapacitySnapshot = {
+  npp_ref: string;
+  source_endpoint: string;
+  retrieved_at: string;
+  reporting_date: string | null;
+  installed_capacity_mw: number | null;
+  monitored_capacity_mw: number | null;
+  under_maintenance_capacity_mw: number | null;
+  online_capacity_mw: number | null;
+  shutdown_capacity_mw: number | null;
+  unscheduled_capacity_mw: number | null;
+  by_sector: NppSectorCapacity[];
+};
+
+// A live pass-through to NPP, not a DB read — can 502 if npp.gov.in is
+// unreachable, distinct from the rest of this file's DB-backed fetches.
+export function fetchNppCapacitySnapshot(): Promise<NppCapacitySnapshot> {
+  return getJson<NppCapacitySnapshot>("/api/npp/capacity-snapshot");
+}

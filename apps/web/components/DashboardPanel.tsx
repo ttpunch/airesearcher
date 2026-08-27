@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchDashboardSummary, type DashboardSummary } from "@/lib/api";
+import { NppSnapshotCard } from "@/components/NppSnapshotCard";
 
 type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: "ok"; summary: DashboardSummary };
 
@@ -50,6 +51,8 @@ export function DashboardPanel() {
           <StatTile key={key} label={label} value={counts[key]} href={href} />
         ))}
       </div>
+
+      <NppSnapshotCard />
 
       <div className="flex max-w-xl flex-col gap-3">
         <div className="flex items-center justify-between">
