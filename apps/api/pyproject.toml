@@ -17,7 +17,16 @@ dependencies = [
     "python-multipart>=0.0.12",
     "pgvector>=0.5.0",
     "claude-agent-sdk>=0.2.144",
+    # Already resolved as a transitive dependency of claude-agent-sdk;
+    # promoted to direct because app/mcp_servers/ builds a standalone MCP
+    # server with it directly, not just via the Claude Agent SDK's
+    # in-process create_sdk_mcp_server(). Pinned <3 since 1.x->2.x already
+    # renamed FastMCP -> MCPServer; a 3.x could do the same again.
+    "mcp>=2.1,<3",
 ]
+
+[project.scripts]
+npp-mcp = "app.mcp_servers.npp_server:main"
 
 [dependency-groups]
 dev = [

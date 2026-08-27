@@ -33,6 +33,19 @@ class Settings(BaseSettings):
     deepseek_api_key: str | None = None
     deepseek_model: str = "deepseek-chat"
 
+    # National Power Portal (npp.gov.in) integration — see
+    # app/portals/npp/ for the client and app/mcp_servers/npp_server.py
+    # for the standalone MCP server built on it. Unlike GeM, NPP's
+    # dashboard endpoints are plain unauthenticated JSON GETs (verified
+    # live), so this is a real client, not a manual-entry workaround.
+    npp_enabled: bool = True
+    npp_base_url: str = "https://npp.gov.in"
+    npp_timeout_seconds: float = 30.0
+    npp_max_retries: int = 2
+    npp_cache_ttl_seconds: int = 21600  # 6h — station/project/capacity data
+    npp_trend_cache_ttl_seconds: int = 86400  # 24h — annual generation series
+    npp_max_tool_results: int = 100
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

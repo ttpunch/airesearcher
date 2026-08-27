@@ -51,6 +51,8 @@ services:
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      NPP_ENABLED: ${NPP_ENABLED:-true}
+      NPP_BASE_URL: ${NPP_BASE_URL:-https://npp.gov.in}
     ports:
       - "8000:8000"
     depends_on:
