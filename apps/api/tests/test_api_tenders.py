@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 import httpx
 import pytest
@@ -6,10 +7,15 @@ from asgi_lifespan import LifespanManager
 from sqlalchemy import delete
 
 from app.core.db import AsyncSessionLocal
+from app.crawler.hwr_tenders import SOURCE_NAME
 from app.main import app
 from app.models.document import Document
 from app.models.source import Source
 from app.models.tender import Tender
+from app.routers.tenders import get_hwr_client
+from app.services.tenders import HWR_ORGANIZATION
+
+HWR_FIXTURE = (Path(__file__).parent / "fixtures" / "hwr_tenders" / "tenderlist.html").read_text(encoding="utf-8")
 
 
 @pytest.fixture
@@ -196,3 +202,65 @@ async def test_extract_requirements_without_linked_document_422(client):
         assert extract_resp.status_code == 422
     finally:
         await _cleanup(source_id)
+
+
+def _hwr_handler(request: httpx.Request) -> httpx.Response:
+    if request.url.path == "/robots.txt":
+        return httpx.Response(404)
+    if request.url.path == "/tenders/onlinetenders/tenderlist.jsp":
+        return httpx.Response(200, text=HWR_FIXTURE)
+    return httpx.Response(404)
+
+
+def _make_hwr_test_client() -> httpx.AsyncClient:
+    base_url = f"https://hwr-test-{uuid.uuid4().hex}.example"
+    return httpx.AsyncClient(transport=httpx.MockTransport(_hwr_handler), base_url=base_url)
+
+
+async def _cleanup_hwr() -> None:
+    async with AsyncSessionLocal() as db:
+        await db.execute(delete(Tender).where(Tender.organization == HWR_ORGANIZATION))
+        await db.execute(delete(Source).where(Source.name == SOURCE_NAME))
+        await db.commit()
+
+
+async def test_sync_hwr_endpoint_returns_counts(client):
+    await _cleanup_hwr()
+    app.dependency_overrides[get_hwr_client] = _make_hwr_test_client
+    try:
+        response = await client.post("/api/tenders/sync-hwr")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["source_created"] is True
+        assert body["total_fetched"] == 3
+        assert body["tenders_created"] == 3
+    finally:
+        app.dependency_overrides.pop(get_hwr_client, None)
+        await _cleanup_hwr()
+
+
+async def test_sync_hwr_endpoint_is_idempotent(client):
+    await _cleanup_hwr()
+    app.dependency_overrides[get_hwr_client] = _make_hwr_test_client
+    try:
+        await client.post("/api/tenders/sync-hwr")
+        second = await client.post("/api/tenders/sync-hwr")
+        assert second.status_code == 200
+        assert second.json()["tenders_created"] == 0
+    finally:
+        app.dependency_overrides.pop(get_hwr_client, None)
+        await _cleanup_hwr()
+
+
+async def test_synced_hwr_tenders_visible_via_list_endpoint(client):
+    await _cleanup_hwr()
+    app.dependency_overrides[get_hwr_client] = _make_hwr_test_client
+    try:
+        await client.post("/api/tenders/sync-hwr")
+        response = await client.get("/api/tenders", params={"organization": HWR_ORGANIZATION})
+        assert response.status_code == 200
+        refs = {t["tender_ref"] for t in response.json()}
+        assert "GEM/2026/B/7966022" in refs
+    finally:
+        app.dependency_overrides.pop(get_hwr_client, None)
+        await _cleanup_hwr()
