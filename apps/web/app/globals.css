@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/* Technical-console theme: amber/copper accent on a dark slate base by
+ * default, with a light variant for prefers-color-scheme: light (below) —
+ * plus a three-font system (Space Grotesk for display, IBM Plex Sans for
+ * body, IBM Plex Mono for data/citations). Font loading lives in
+ * layout.tsx via next/font/google, which sets the --font-space-grotesk /
+ * --font-ibm-plex-* variables these tokens reference — same wiring
+ * pattern this file already used for Geist.
+ *
+ * Every component reads these as Tailwind utilities (bg-canvas, text-ink,
+ * etc.) via the @theme inline block below, so switching themes here is
+ * the only change needed — no component touches a light:/dark: variant.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-canvas: oklch(0.15 0.010 255);
+  --color-sidebar: oklch(0.12 0.010 255);
+  --color-surface: oklch(0.19 0.011 255);
+  --color-surface-2: oklch(0.235 0.013 255);
+  --color-inset: oklch(0.105 0.009 255);
+
+  --color-line: oklch(0.30 0.014 255);
+  --color-line-strong: oklch(0.40 0.017 255);
+
+  --color-ink: oklch(0.95 0.004 255);
+  --color-ink-muted: oklch(0.745 0.012 255);
+  --color-ink-faint: oklch(0.64 0.012 255);
+  --color-ink-onaccent: oklch(0.16 0.010 255);
+
+  --color-accent: oklch(0.745 0.155 58);
+  --color-accent-strong: oklch(0.635 0.17 52);
+
+  --color-ok: oklch(0.72 0.15 152);
+  --color-err: oklch(0.685 0.19 25);
+  --color-warn: oklch(0.80 0.135 92);
+  --color-info: oklch(0.72 0.09 230);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+/* Light variant — same hue axis (255) and the same amber accent hue (58),
+ * just re-tuned for a white/near-white base: surfaces go light-to-dark
+ * instead of dark-to-light, and every semantic/accent hue is deepened so
+ * it still clears AA contrast as text against a near-white background
+ * (the dark theme's bright, high-lightness accent would wash out here).
+ */
+@media (prefers-color-scheme: light) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-canvas: oklch(0.985 0.003 255);
+    --color-sidebar: oklch(0.965 0.005 255);
+    --color-surface: oklch(0.995 0.002 255);
+    --color-surface-2: oklch(0.95 0.007 255);
+    --color-inset: oklch(0.96 0.006 255);
+
+    --color-line: oklch(0.87 0.009 255);
+    --color-line-strong: oklch(0.76 0.013 255);
+
+    --color-ink: oklch(0.18 0.010 255);
+    --color-ink-muted: oklch(0.40 0.013 255);
+    --color-ink-faint: oklch(0.53 0.013 255);
+    --color-ink-onaccent: oklch(0.16 0.010 255);
+
+    --color-accent: oklch(0.60 0.16 55);
+    --color-accent-strong: oklch(0.50 0.17 50);
+
+    --color-ok: oklch(0.52 0.15 152);
+    --color-err: oklch(0.55 0.19 25);
+    --color-warn: oklch(0.58 0.145 85);
+    --color-info: oklch(0.52 0.11 230);
   }
 }
 
+@theme inline {
+  --color-canvas: var(--color-canvas);
+  --color-sidebar: var(--color-sidebar);
+  --color-surface: var(--color-surface);
+  --color-surface-2: var(--color-surface-2);
+  --color-inset: var(--color-inset);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-ink-onaccent: var(--color-ink-onaccent);
+  --color-accent: var(--color-accent);
+  --color-accent-strong: var(--color-accent-strong);
+  --color-ok: var(--color-ok);
+  --color-err: var(--color-err);
+  --color-warn: var(--color-warn);
+  --color-info: var(--color-info);
+
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: var(--color-accent);
+}
+a:hover {
+  color: var(--color-accent-strong);
 }

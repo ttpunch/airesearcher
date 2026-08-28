@@ -17,42 +17,50 @@ export function EntityList({ entityType, emptyMessage }: { entityType: string; e
   }, [entityType]);
 
   if (state.kind === "loading") {
-    return <p className="text-sm text-zinc-500">Loading…</p>;
+    return <p className="text-sm text-ink-muted">Loading…</p>;
   }
 
   if (state.kind === "error") {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {state.message}
-      </div>
-    );
+    return <div className="rounded-md border border-err/35 bg-err/10 p-4 text-sm text-err">{state.message}</div>;
   }
 
   if (state.entities.length === 0) {
-    return <p className="text-sm text-zinc-500">{emptyMessage}</p>;
+    return <p className="text-sm text-ink-muted">{emptyMessage}</p>;
   }
 
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="grid max-w-3xl grid-cols-1 gap-3.5 sm:grid-cols-2">
       {state.entities.map((entity) => (
-        <li
-          key={entity.id}
-          className="flex flex-col gap-1.5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-        >
-          {entity.source_url ? (
+        <li key={entity.id} className="relative flex flex-col gap-2.5 rounded-md border border-line bg-surface p-5">
+          <span className="pointer-events-none absolute top-[-1px] left-[-1px] h-2.5 w-2.5 border-t-2 border-l-2 border-accent" />
+          <span className="pointer-events-none absolute right-[-1px] bottom-[-1px] h-2.5 w-2.5 border-r-2 border-b-2 border-accent" />
+          <div className="flex items-center justify-between">
+            {entity.source_url ? (
+              <a
+                href={entity.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-display font-semibold text-ink underline-offset-2 hover:underline"
+              >
+                {entity.name}
+              </a>
+            ) : (
+              <span className="font-display font-semibold text-ink">{entity.name}</span>
+            )}
+            <span className="rounded border border-info/35 bg-info/14 px-2 py-0.5 font-mono text-[10px] tracking-wide text-info uppercase">
+              {entity.entity_type}
+            </span>
+          </div>
+          {entity.description && <p className="text-[12.5px] leading-relaxed text-ink-faint">{entity.description}</p>}
+          {entity.source_url && (
             <a
               href={entity.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-zinc-900 underline decoration-zinc-300 hover:decoration-zinc-500 dark:text-zinc-100 dark:decoration-zinc-700"
+              className="text-[12.5px] text-accent"
             >
-              {entity.name}
+              {entity.source_url.replace(/^https?:\/\//, "")} ↗
             </a>
-          ) : (
-            <span className="font-medium text-zinc-900 dark:text-zinc-100">{entity.name}</span>
-          )}
-          {entity.description && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{entity.description}</p>
           )}
         </li>
       ))}

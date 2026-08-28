@@ -1,23 +1,14 @@
-import Link from "next/link";
+import { AppShell } from "@/components/AppShell";
 import { DashboardPanel } from "@/components/DashboardPanel";
 
 export default function DashboardPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 bg-zinc-50 px-6 py-16 dark:bg-black">
-      <div className="flex w-full max-w-2xl flex-col gap-2">
-        <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
-          ← Home
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Dashboard
-        </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          What&apos;s indexed across the platform, and the highest-scored strategic opportunities.
-        </p>
-      </div>
-      <div className="w-full max-w-2xl">
-        <DashboardPanel />
-      </div>
-    </main>
+    <AppShell
+      breadcrumb="DASHBOARD"
+      title="Dashboard"
+      description="What's indexed across the platform, and the highest-scored strategic opportunities."
+    >
+      <DashboardPanel />
+    </AppShell>
   );
 }

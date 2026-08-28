@@ -20,6 +20,7 @@ from app.routers import (
     documents,
     entities,
     health,
+    npp,
     opportunities,
     relationships,
     research,
@@ -62,3 +63,4 @@ app.include_router(relationships.router)
 app.include_router(research.router)
 app.include_router(opportunities.router)
 app.include_router(dashboard.router)
+app.include_router(npp.router)

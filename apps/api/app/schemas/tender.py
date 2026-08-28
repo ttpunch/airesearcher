@@ -52,3 +52,10 @@ class TenderAnalysis(BaseModel):
     total_tenders: int
     by_status: dict[str, int]
     by_organization: list[OrganizationBidStats]
+
+
+class HwrSyncResultOut(BaseModel):
+    source_created: bool
+    total_fetched: int
+    tenders_created: int
+    tenders_updated: int
