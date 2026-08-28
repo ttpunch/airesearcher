@@ -11,13 +11,11 @@ type State =
 function Badge({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
-        ok
-          ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
-          : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+      className={`inline-flex items-center gap-1.5 rounded px-3 py-1 font-mono text-[11px] font-medium tracking-wide uppercase ${
+        ok ? "bg-ok/14 text-ok" : "bg-err/14 text-err"
       }`}
     >
-      <span className={`h-2 w-2 rounded-full ${ok ? "bg-green-500" : "bg-red-500"}`} />
+      <span className={`h-2 w-2 rounded-full ${ok ? "bg-ok" : "bg-err"}`} />
       {label}
     </span>
   );
@@ -35,15 +33,13 @@ export function StatusCard() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">System status</h2>
-      {state.kind === "loading" && (
-        <p className="text-sm text-zinc-500">Checking API and database connectivity…</p>
-      )}
+    <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-5">
+      <h2 className="font-mono text-[11px] tracking-wide text-ink-faint uppercase">System status</h2>
+      {state.kind === "loading" && <p className="text-sm text-ink-muted">Checking API and database connectivity…</p>}
       {state.kind === "error" && (
         <div className="flex flex-col gap-2">
           <Badge ok={false} label="API unreachable" />
-          <p className="text-sm text-red-600 dark:text-red-400">{state.message}</p>
+          <p className="text-sm text-err">{state.message}</p>
         </div>
       )}
       {state.kind === "ok" && (
@@ -52,7 +48,7 @@ export function StatusCard() {
             <Badge ok={state.status.api === "ok"} label="API" />
             <Badge ok={state.status.db === "ok"} label="Database" />
           </div>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500">{state.status.timestamp}</p>
+          <p className="font-mono text-[10.5px] text-ink-faint">{state.status.timestamp}</p>
         </div>
       )}
     </div>

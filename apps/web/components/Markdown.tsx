@@ -3,75 +3,65 @@ import remarkGfm from "remark-gfm";
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="mt-4 mb-2 text-lg font-semibold text-zinc-900 first:mt-0 dark:text-zinc-100">
+    <h1 className="mt-4 mb-2 font-display text-lg font-semibold text-ink first:mt-0">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mt-4 mb-2 text-base font-semibold text-zinc-900 first:mt-0 dark:text-zinc-100">
+    <h2 className="mt-4 mb-2 font-display text-base font-semibold text-ink first:mt-0">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-3 mb-1.5 text-sm font-semibold text-zinc-900 first:mt-0 dark:text-zinc-100">
+    <h3 className="mt-3 mb-1.5 font-display text-sm font-semibold text-ink first:mt-0">
       {children}
     </h3>
   ),
   p: ({ children }) => (
-    <p className="mb-3 text-sm leading-relaxed text-zinc-800 last:mb-0 dark:text-zinc-200">
-      {children}
-    </p>
+    <p className="mb-3 text-sm leading-relaxed text-ink-muted last:mb-0">{children}</p>
   ),
   ul: ({ children }) => (
-    <ul className="mb-3 ml-5 list-disc space-y-1 text-sm leading-relaxed text-zinc-800 last:mb-0 dark:text-zinc-200">
+    <ul className="mb-3 ml-5 list-disc space-y-1 text-sm leading-relaxed text-ink-muted last:mb-0">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-zinc-800 last:mb-0 dark:text-zinc-200">
+    <ol className="mb-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-ink-muted last:mb-0">
       {children}
     </ol>
   ),
   li: ({ children }) => <li>{children}</li>,
-  strong: ({ children }) => (
-    <strong className="font-semibold text-zinc-900 dark:text-zinc-100">{children}</strong>
-  ),
+  strong: ({ children }) => <strong className="font-semibold text-ink">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
   a: ({ children, href }) => (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="underline decoration-zinc-300 hover:decoration-zinc-500 dark:decoration-zinc-700"
+      className="text-accent underline decoration-line-strong hover:decoration-accent"
     >
       {children}
     </a>
   ),
   code: ({ children }) => (
-    <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-      {children}
-    </code>
+    <code className="rounded bg-inset px-1 py-0.5 font-mono text-xs text-ink">{children}</code>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="mb-3 border-l-2 border-zinc-200 pl-3 text-sm text-zinc-600 last:mb-0 dark:border-zinc-800 dark:text-zinc-400">
+    <blockquote className="mb-3 border-l-2 border-line pl-3 text-sm text-ink-faint last:mb-0">
       {children}
     </blockquote>
   ),
-  hr: () => <hr className="my-4 border-zinc-100 dark:border-zinc-900" />,
+  hr: () => <hr className="my-4 border-line" />,
   table: ({ children }) => (
     <div className="mb-3 overflow-x-auto last:mb-0">
       <table className="w-full text-left text-sm">{children}</table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="border-b border-zinc-200 px-2 py-1 font-medium text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
-      {children}
-    </th>
+    <th className="border-b border-line px-2 py-1 font-medium text-ink-muted">{children}</th>
   ),
   td: ({ children }) => (
-    <td className="border-b border-zinc-100 px-2 py-1 text-zinc-700 dark:border-zinc-900 dark:text-zinc-300">
-      {children}
-    </td>
+    <td className="border-b border-line px-2 py-1 text-ink-muted">{children}</td>
   ),
 };
 

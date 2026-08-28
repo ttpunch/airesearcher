@@ -102,6 +102,20 @@ GET  /api/dashboard/summary
 
 `/api/opportunities` is seeded on startup with the strategy report's real Top 10 Strategic Initiatives and their weighted ROI scores — every one starts `status="proposed"` and only changes via an explicit approve/reject call (RECOMMENDATION-tagged output requires human approval; see AGENTS.md). `approved_by` is a plain name field, not real authentication. Browse and decide on them at http://localhost:3000/opportunities, browse the knowledge graph at http://localhost:3000/graph, and get an overview of everything indexed at http://localhost:3000/dashboard.
 
+## Standalone MCP servers
+
+Besides the in-process agent tools above, `apps/api` also ships **standalone** MCP servers — separate processes speaking the real MCP protocol, usable from Claude Desktop, Claude Code, or the MCP Inspector, not just this project's own `/api/ask`/`/api/research`.
+
+**NPP (India's National Power Portal)** — 7 read-only tools over live power-station, project, and generation-trend data (`npp_find_power_stations`, `npp_get_power_station`, `npp_summarize_capacity`, `npp_find_projects`, `npp_get_generation_trend`, `npp_get_capacity_snapshot`, `npp_list_regions`):
+
+```bash
+cd apps/api && uv run npp-mcp                 # runs over stdio
+claude mcp add npp -- uv --directory apps/api run npp-mcp   # register with Claude Code
+npx @modelcontextprotocol/inspector uv --directory apps/api run npp-mcp   # inspect interactively
+```
+
+See `app/portals/npp/` for the client and `app/mcp_servers/npp_server.py` for the server. `app/portals/` is a reusable scaffold — see its module docstrings for what a second government-data-portal integration would need to add.
+
 ## All pages
 
 | Page | What it shows |

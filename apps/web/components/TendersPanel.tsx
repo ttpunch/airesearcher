@@ -10,14 +10,14 @@ type State =
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    open: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-    closed: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-    awarded: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-    unknown: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+    open: "bg-info/14 text-info border-info/35",
+    closed: "bg-surface-2 text-ink-muted border-line",
+    awarded: "bg-ok/14 text-ok border-ok/35",
+    unknown: "bg-warn/14 text-warn border-warn/35",
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center rounded border px-2 py-0.5 font-mono text-[10.5px] font-medium tracking-wide uppercase ${
         styles[status] ?? styles.unknown
       }`}
     >
@@ -28,24 +28,24 @@ function StatusBadge({ status }: { status: string }) {
 
 function AnalysisSummary({ analysis }: { analysis: TenderAnalysis }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-col gap-3 rounded-md border border-line bg-surface p-5">
+      <h2 className="font-mono text-[11px] tracking-wide text-ink-faint uppercase">
         Bid-pattern summary ({analysis.total_tenders} tender{analysis.total_tenders === 1 ? "" : "s"})
       </h2>
       <div className="flex flex-wrap gap-2">
         {Object.entries(analysis.by_status).map(([status, count]) => (
           <span key={status} className="flex items-center gap-1.5">
             <StatusBadge status={status} />
-            <span className="text-xs text-zinc-500">×{count}</span>
+            <span className="text-xs text-ink-faint">×{count}</span>
           </span>
         ))}
       </div>
       {analysis.by_organization.length > 0 && (
-        <div className="flex flex-col gap-1 border-t border-zinc-100 pt-3 text-sm dark:border-zinc-900">
+        <div className="flex flex-col gap-1 border-t border-line pt-3 text-sm">
           {analysis.by_organization.map((row) => (
-            <div key={row.organization} className="flex justify-between text-zinc-600 dark:text-zinc-400">
+            <div key={row.organization} className="flex justify-between text-ink-muted">
               <span>{row.organization}</span>
-              <span>{row.total}</span>
+              <span className="font-mono">{row.total}</span>
             </div>
           ))}
         </div>
@@ -66,53 +66,45 @@ export function TendersPanel() {
   }, []);
 
   if (state.kind === "loading") {
-    return <p className="text-sm text-zinc-500">Loading tenders…</p>;
+    return <p className="text-sm text-ink-muted">Loading tenders…</p>;
   }
 
   if (state.kind === "error") {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {state.message}
-      </div>
-    );
+    return <div className="rounded-md border border-err/35 bg-err/10 p-4 text-sm text-err">{state.message}</div>;
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex max-w-3xl flex-col gap-6">
       <AnalysisSummary analysis={state.analysis} />
 
       {state.tenders.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No tenders indexed yet — add one via <code>POST /api/tenders</code>.
+        <p className="text-sm text-ink-muted">
+          No tenders indexed yet — add one via <code className="font-mono text-ink-faint">POST /api/tenders</code>.
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {state.tenders.map((tender) => (
-            <li
-              key={tender.id}
-              className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-            >
+            <li key={tender.id} className="flex flex-col gap-2 rounded-md border border-line bg-surface p-4">
               <div className="flex items-center justify-between gap-2">
                 <a
                   href={tender.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-zinc-900 underline decoration-zinc-300 hover:decoration-zinc-500 dark:text-zinc-100 dark:decoration-zinc-700"
+                  className="font-medium text-ink underline decoration-line-strong hover:decoration-accent"
                 >
                   {tender.title}
                 </a>
                 <StatusBadge status={tender.status} />
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-500">
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-faint">
                 <span>{tender.organization}</span>
-                {tender.tender_ref && <span>Ref: {tender.tender_ref}</span>}
+                {tender.tender_ref && <span className="font-mono text-ink-muted">Ref: {tender.tender_ref}</span>}
                 {tender.closing_date && <span>Closes: {tender.closing_date}</span>}
                 {tender.estimated_value && <span>Est. value: {tender.estimated_value}</span>}
               </div>
               {tender.extracted_requirements && (
-                <p className="rounded-md bg-zinc-50 p-2 text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-                  Requirements extracted from the linked document — see{" "}
-                  <code>GET /api/tenders/{tender.id}</code> for the structured fields.
+                <p className="rounded bg-inset p-2 font-mono text-[11.5px] text-ink-faint">
+                  Requirements extracted from the linked document — see GET /api/tenders/{tender.id}
                 </p>
               )}
             </li>

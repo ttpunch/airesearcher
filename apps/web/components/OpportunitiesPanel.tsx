@@ -7,12 +7,12 @@ type State = { kind: "loading" } | { kind: "error"; message: string } | { kind: 
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    proposed: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-    approved: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-    rejected: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+    proposed: "bg-warn/14 text-warn border-warn/35",
+    approved: "bg-ok/14 text-ok border-ok/35",
+    rejected: "bg-err/14 text-err border-err/35",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}>
+    <span className={`inline-flex items-center rounded border px-2 py-0.5 font-mono text-[10.5px] font-medium tracking-wide uppercase ${styles[status]}`}>
       {status}
     </span>
   );
@@ -50,37 +50,43 @@ function OpportunityCard({
   }
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-zinc-900 dark:text-zinc-100">{opportunity.title}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-500">score {opportunity.weighted_score}</span>
+    <li className="flex flex-col gap-2.5 rounded-md border border-line bg-surface p-5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-semibold text-ink">{opportunity.title}</span>
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono text-[13px] text-accent">{opportunity.weighted_score}</span>
           <StatusBadge status={opportunity.status} />
         </div>
       </div>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">{opportunity.description}</p>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-500">
-        <span>Strategic value: {opportunity.strategic_value}</span>
-        <span>Feasibility: {opportunity.feasibility}</span>
-        <span>Timeline: {opportunity.timeline}</span>
+      <p className="text-sm leading-relaxed text-ink-muted">{opportunity.description}</p>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-2.5 text-[11.5px] text-ink-faint">
+        <span>
+          Strategic value: <span className="font-mono text-ink-muted">{opportunity.strategic_value}</span>
+        </span>
+        <span>
+          Feasibility: <span className="font-mono text-ink-muted">{opportunity.feasibility}</span>
+        </span>
+        <span>
+          Timeline: <span className="font-mono text-ink-muted">{opportunity.timeline}</span>
+        </span>
       </div>
-      <p className="text-xs text-zinc-500 dark:text-zinc-500">{opportunity.tech_summary}</p>
-      <p className="text-xs text-zinc-500 dark:text-zinc-500">Risk: {opportunity.risk}</p>
+      <p className="text-xs text-ink-faint">{opportunity.tech_summary}</p>
+      <p className="text-xs text-ink-faint">Risk: {opportunity.risk}</p>
 
       {opportunity.status === "proposed" ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-2 dark:border-zinc-900">
+        <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
           <input
             type="text"
             value={approverName}
             onChange={(e) => setApproverName(e.target.value)}
             placeholder="Your name"
-            className="flex-1 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-950 placeholder:text-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+            className="flex-1 rounded border border-line bg-inset px-2.5 py-1.5 text-xs text-ink placeholder:text-ink-faint"
           />
           <button
             type="button"
             disabled={busy}
             onClick={() => handleDecision("approve")}
-            className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="rounded bg-ok px-3 py-1.5 text-xs font-semibold text-ink-onaccent disabled:opacity-50"
           >
             Approve
           </button>
@@ -88,17 +94,17 @@ function OpportunityCard({
             type="button"
             disabled={busy}
             onClick={() => handleDecision("reject")}
-            className="rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="rounded border border-err/40 px-3 py-1.5 text-xs font-semibold text-err disabled:opacity-50"
           >
             Reject
           </button>
         </div>
       ) : (
-        <p className="border-t border-zinc-100 pt-2 text-xs text-zinc-500 dark:border-zinc-900 dark:text-zinc-500">
+        <p className="border-t border-line pt-2.5 text-xs text-ink-faint">
           {opportunity.status === "approved" ? "Approved" : "Rejected"} by {opportunity.approved_by}
         </p>
       )}
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-xs text-err">{error}</p>}
     </li>
   );
 }
@@ -122,17 +128,13 @@ export function OpportunitiesPanel() {
     );
   }
 
-  if (state.kind === "loading") return <p className="text-sm text-zinc-500">Loading…</p>;
+  if (state.kind === "loading") return <p className="text-sm text-ink-muted">Loading…</p>;
   if (state.kind === "error") {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {state.message}
-      </div>
-    );
+    return <div className="rounded-md border border-err/35 bg-err/10 p-4 text-sm text-err">{state.message}</div>;
   }
 
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex max-w-3xl flex-col gap-2.5">
       {state.opportunities.map((opportunity) => (
         <OpportunityCard key={opportunity.id} opportunity={opportunity} onDecided={handleDecided} />
       ))}
