@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Markdown } from "@/components/Markdown";
 import { askQuestion, type AskResponse } from "@/lib/api";
 
 type State =
@@ -105,9 +106,7 @@ export function AskPanel() {
             verified={state.result.verified}
             unverifiableCount={state.result.unverifiable_citation_count}
           />
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-800 dark:text-zinc-200">
-            {state.result.answer}
-          </p>
+          <Markdown>{state.result.answer}</Markdown>
 
           {state.result.citations.length > 0 && (
             <div className="flex flex-col gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-900">

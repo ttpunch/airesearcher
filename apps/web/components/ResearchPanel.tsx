@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { Markdown } from "@/components/Markdown";
 import {
   createResearchReport,
   fetchResearchReports,
@@ -56,9 +57,7 @@ function ReportCard({ report }: { report: ResearchReport }) {
       </button>
       {expanded && (
         <div className="flex flex-col gap-3 border-t border-zinc-100 pt-3 dark:border-zinc-900">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-            {report.summary}
-          </p>
+          <Markdown>{report.summary}</Markdown>
           {report.references.length > 0 && (
             <ul className="flex flex-col gap-2">
               {report.references.map((ref: Reference) => (
